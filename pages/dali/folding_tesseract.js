@@ -15,7 +15,7 @@ function FoldingTesseract(name, scene) {
     this.scene = scene;
     
     var mat1 = new BABYLON.StandardMaterial("mat2", scene);
-    mat1.diffuseTexture = new BABYLON.Texture("images/hc_face.png", scene);
+    // mat1.diffuseTexture = new BABYLON.Texture("images/hc_face.png", scene);
     mat1.backFaceCulling = true;
     mat1.specularColor.r = mat1.specularColor.g = mat1.specularColor.b = 0.1;
     
@@ -356,4 +356,15 @@ function createFoldingTesseractGui(canvas, scene) {
 }
 
 
+function onImgLoaded(img) 
+{
+    console.log(img, img.width, img.height)
+    let texture = new BABYLON.DynamicTexture('img-texture',{
+        width:img.width,
+        height:img.height
+    }, scene)
+    texture.getContext().drawImage(img,0,0)
+    texture.update()
+    foldingTesseract.mesh.material.diffuseTexture = texture
 
+}
