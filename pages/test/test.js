@@ -166,11 +166,12 @@ BABYLON.Effect.ShadersStore[shaderName + "VertexShader"]= `
     vec3 fun(float u, float v) {   
         float u_ab = phi_cssn[0];
         float u_cd = phi_cssn[1];
-           
-        float x1 = u_ab*cos(2.0*u*PI);
-        float x3 = u_ab*sin(2.0*u*PI);
-        float x2 = u_cd*cos(2.0*v*PI);
-        float x4 = u_cd*sin(2.0*v*PI);
+        
+        float r = u_ab*sin(v*PI);
+        float x2 = u_ab*cos(v*PI);
+        float x1 = r*cos(2.0*u*PI);
+        float x3 = r*sin(2.0*u*PI);
+        float x4 = u_cd;
         float tm;
         
         tm = x1*u_cs-x4*u_sn;

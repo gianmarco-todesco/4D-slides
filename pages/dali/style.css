@@ -1,0 +1,275 @@
+﻿/* definisco il font 'Dali', caricato dal file dali.ttf */
+@font-face {
+    font-family: 'Dali'; 
+    src: url('dali.ttf'); 
+}
+
+/* html */
+html { 
+  padding:0; 
+  margin:0; 
+}
+
+/* body */
+body {
+  padding:0; 
+  margin:0;
+  
+  /* definisco lo standard per il testo della pagina */
+  color:#000;  /* testo di colore nero */
+  text-align:justify;  /* giustificato */
+  font-family:Verdana, serif; /* Verdana */
+  
+  /* immagine di sfondo : la faccia di Dalì */
+  background-image:url(images/dali_bg.png);
+  background-repeat:no-repeat;
+  overflow-x:hidden;
+  
+}
+
+/*
+ho definito le caratteristiche per l'allineamento del testo come accordato
+*/
+
+.left { text-align:left; }
+
+.right { text-align:right; }
+
+.center { text-align:center }
+
+.ref {margin-top:0;margin-bottom:0; }  
+
+/*
+  questa classe viene usata per rendere il contenuto non selezionabile.
+  Tipicamente serve per le animazioni, dove il click&drag viene usato per controllare l'animazione
+  e non deve selezionare in maniera incontrollata il testo presente
+*/
+.unselectable {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;      
+      }
+
+      
+.animation  canvas {
+    width:500px;
+    height:375px;
+    float:left;
+    margin-right:10px;
+}
+
+canvas#square {
+    width:300px;
+    height:180px;
+}
+      
+/*
+  il cursore sulle animazioni deve diventare una manina con il dito indice proteso 
+  */      
+canvas {
+  cursor:pointer;     
+}
+
+/*
+   controllo dello stile dello slider utilizzato nelle tre animazioni.
+   Attenzione: verrà rimosso nella versione finale
+*/
+.sliderDiv {
+    position:absolute; 
+    left:0px; right:0px; bottom:0px; 
+    height:15px; 
+    padding:15px;
+    z-index:4;
+    text-align:center;
+    color:white;
+    cursor:pointer;   
+}
+
+.sliderDiv > .slider {
+    display:inline-block;
+    width:200px;
+    margin:0px 10px 0px 10px;
+    vertical-align:middle;
+
+}
+
+/*
+   caratteristica della linea orizzontale che separa i blocchi di testo
+*/
+hr {
+    width:12%;
+    margin-top:3em;    
+    margin-bottom:3em;    
+}
+
+
+/*
+   stile del cursore che controlla lo scrolling della pagina
+ */
+ 
+*::-webkit-scrollbar {-webkit-appearance: none; width: 10px; height: 20px; border-radius:10px}
+*::-webkit-scrollbar-track-piece {background-color: none}
+*::-webkit-scrollbar-thumb {background-color: #361446; border-radius:5px}
+*::-webkit-scrollbar-thumb:vertical {height: 20px}
+*::-webkit-scrollbar-thumb:horizontal {width: 20px}
+
+
+/* titolo */ 
+h1 {
+    font-family: Dali;
+    font-size:67px;
+    margin:0px 0px 0px 360px;
+    z-index:10; /* la gambetta della 'f' deve andare sopra il pink box */
+}
+
+/* pink box : contiene il testo principale e le tre animazioni */
+
+#main {
+  border-radius: 25px; /* bordi arrotondati */
+  background: #DCA4CA; /* sfondo rosa */
+  padding: 20px; /* 20 pixels di spazio fra il bordo e il contenuto */
+  margin: -20px 10px 10px 370px; /* margini esterni. 
+                                    quello in alto è negativo perchè voglio che il pink box si infili sotto 
+                                    la gambetta della f del titolo
+                                    quello a sinistra è grande (360px) perchè devo lasciare spazio per l'immagine di Dalì
+                                    e il box con i link */
+  font-size:14px; 
+}
+
+#main a:link {
+    color: white;           /* il colore è bianco */
+    text-decoration: underline;  /* e i link non sono sottolineati */
+}
+#main a:visited {
+    color: white;    /* nessun colore speciale per i link visitati */
+}
+
+#main a:hover  {
+    color: #333333;
+    text-decoration: underline; /* quando passo con il mouse sopra un link il link viene sottolineato */
+}
+
+/*
+  l'animazione con il quadrato va centrata nella pagina
+  */
+
+#foldingSquareDiv {
+    position:relative;
+    left:50%;
+    margin-left:-150px;
+}
+
+/*
+  il titolo del box con i link
+  */
+
+#links_box h2 {
+    position:absolute; /* è spostato in alto in modo da sporgersi oltre il limite del box */
+    right:20px;
+    top:-60px;
+    font-family: Dali;
+    font-size:35px;
+}
+
+/* 
+  ho creato altri due stili di heading per i link all'interno del box giallo,
+  così non ho intasato l'HTML. Non so se fosse la scelta migliore
+  
+  gmt: assolutamente si. bravissima. Meglio ancora usare le classi
+  invece dei tag Hn 
+*/
+
+#links_box .reference {
+    font-family: Verdana;
+    font-size:20px;
+    text-align:right;
+    font-weight:bold;
+    margin-top:0;
+    text-shadow:1px 1px 1px #333333;
+}
+
+#links_box .reference_title { 
+    margin-top:20px; 
+    margin-bottom:0; 
+    font-style: italic;
+    color: #333333;
+}
+
+#links_box .reference_bibliography {
+   margin-top:20px;
+   margin_bottom:0;
+   font-style: italic;
+   font-size: 15px;
+   color: white;
+   text-shadow:1px 1px 1px #333333;
+}
+
+.red {
+    font-weight:bold;
+}
+
+/* il box giallo con i link */
+#links_box {
+  font-size:11px;
+
+  position:absolute; /* è posizionato in modo assoluto rispetto all'origine (alto/sx) della pagina */
+  left:30px;
+  top:530px;
+
+  width:280px; /* definisco la larghezza. L'altezza dipende dal contenuto */
+  /* height:500px; */
+  
+  border-radius: 25px; /* bordo arrotondato */
+  background: #F6C20F; /* colore giallo */
+  padding: 20px;       /* 20 pixel di distanza dal bordo attorno al contenuto */
+}
+
+/* 
+  ho definito lo stile per i link cliccabili nel box giallo
+*/
+
+#links_box a:link {
+   color: white;
+   text-decoration:none;
+}
+
+#links_box a:hover {
+   color: white;
+   text-decoration:underline;
+}
+
+#links_box a:visited {
+   color:white;
+   text-decoration:none;
+}
+
+/*
+  box blu con i crediti, in fondo alla pagina
+  */
+#footer {
+  background: #41909e;      /* colore */
+  padding: 20px;            /* spazio fra il bordo e il contenuto  */
+  margin: 10px 0px 0px 0px; /* margine attorno al bordo. 10 pixel di distanza dal pink box e 0 nelle altre direzioni:
+                               in questo modo il box appare attaccato al margine sx,dx e basso della pagina */
+
+  font-size:13px; 
+  color:white;
+}
+
+/*
+  colore e aspetto dei link dentro il box blu */
+#footer a:link {
+    color: white;           /* il colore è bianco */
+    text-decoration: underline;  /* e i link non sono sottolineati */
+}
+#footer a:visited {
+    color: white;    /* nessun colore speciale per i link visitati */
+}
+
+#footer a:hover  {
+    color: #333333;
+    text-decoration: underline; /* quando passo con il mouse sopra un link il link viene sottolineato */
+}
