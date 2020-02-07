@@ -2,21 +2,21 @@ let canvas,engine,scene
 let camera
 let light1, light2
 
-
-canvas = document.getElementById("renderCanvas")
-engine = new BABYLON.Engine(canvas, true)
-scene = new BABYLON.Scene(engine)
-
-camera = new BABYLON.ArcRotateCamera("Camera", 
-    Math.PI / 2, Math.PI / 2, 10, 
-    new BABYLON.Vector3(0,0,0), scene)
-camera.attachControl(canvas, true)
-camera.wheelPrecision=20
-camera.lowerRadiusLimit = 5
-
-
-light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, -10), scene)
+function initialize() {
+    canvas = document.getElementById("renderCanvas")
+    engine = new BABYLON.Engine(canvas, true)
+    scene = new BABYLON.Scene(engine)
+    
+    camera = new BABYLON.ArcRotateCamera("Camera", 
+        Math.PI / 2, Math.PI / 2, 10, 
+        new BABYLON.Vector3(0,0,0), scene)
+    camera.attachControl(canvas, true)
+    camera.wheelPrecision=20
+    camera.lowerRadiusLimit = 5
+    
+    
+    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
+    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, -10), scene)
 
 
 // let lines = (()=>{
@@ -312,12 +312,20 @@ scene.registerBeforeRender(() => {
     amigaMaterial.setFloat('time',performance.now()*0.003)
 })
 
-engine.runRenderLoop(() => scene.render())
 window.addEventListener("resize", () => engine.resize())
 
 
+    
+}
 
+function start() {
+    engine.runRenderLoop(() => scene.render())
 
+}
+
+function stop() {
+    engine.stopRenderLoop()
+}
 
 function HSVtoRGB(h, s, v) {
     var r, g, b, i, f, p, q, t;

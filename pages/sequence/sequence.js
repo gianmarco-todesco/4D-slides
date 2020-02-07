@@ -2,18 +2,50 @@ let canvas,engine,scene
 let camera
 let light1, light2
 
-
-canvas = document.getElementById("renderCanvas")
-engine = new BABYLON.Engine(canvas, true)
-scene = new BABYLON.Scene(engine)
-
-camera = new BABYLON.ArcRotateCamera("Camera", 
+function initialize() {
+    canvas = document.getElementById("renderCanvas")
+    engine = new BABYLON.Engine(canvas, true)
+    scene = new BABYLON.Scene(engine)
+    camera = new BABYLON.ArcRotateCamera("Camera", 
     Math.PI / 2, Math.PI / 2, 10, 
     new BABYLON.Vector3(0,0,0), scene)
-camera.attachControl(canvas, true)
+    camera.attachControl(canvas, true)
 
-light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 1, -1), scene)
+    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
+    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 1, -1), scene)    
+
+    let model = new Model(scene)
+
+    let oldTime = performance.now()
+    let currentDim = 0
+    let currentDimSpeed = 0.001
+    let currentDimDir = 1
+    
+    scene.registerBeforeRender(function () {
+        let time = performance.now()
+        let deltaTime = time - oldTime
+        oldTime = time
+    
+        currentDim += currentDimSpeed * currentDimDir * deltaTime
+        if(currentDimDir>0 && currentDim >= 5) { currentDim = 4.9999; currentDimDir = -1 }
+        else if(currentDimDir<0 && currentDim <= 0.0) { currentDim = 0; currentDimDir = 1 } 
+        model.updatePositions(currentDim)
+    })
+    
+    window.addEventListener("resize", () => engine.resize())
+    
+}
+
+function start() {
+    engine.runRenderLoop(() => scene.render())    
+}
+
+function stop() {
+    engine.stopRenderLoop()    
+}
+
+
+
 
 class Model {
     constructor(scene) {
@@ -119,24 +151,3 @@ class Model {
     }
 
 }
-
-let model = new Model(scene)
-
-let oldTime = performance.now()
-let currentDim = 0
-let currentDimSpeed = 0.001
-let currentDimDir = 1
-
-scene.registerBeforeRender(function () {
-    let time = performance.now()
-    let deltaTime = time - oldTime
-    oldTime = time
-
-    currentDim += currentDimSpeed * currentDimDir * deltaTime
-    if(currentDimDir>0 && currentDim >= 5) { currentDim = 4.9999; currentDimDir = -1 }
-    else if(currentDimDir<0 && currentDim <= 0.0) { currentDim = 0; currentDimDir = 1 } 
-    model.updatePositions(currentDim)
-})
-
-engine.runRenderLoop(() => scene.render())
-window.addEventListener("resize", () => engine.resize())

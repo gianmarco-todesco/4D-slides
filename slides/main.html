@@ -1,0 +1,41 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/css/reveal.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/css/theme/black.css">
+        <style>
+            .reveal iframe {
+                width:600px;
+                height:400px;
+                border:solid 1px orange;
+            }
+        </style>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>Slide 1</section>
+				<section>
+                    <h2>Slide 2</h2>
+                    <iframe src="test.html?slide"></iframe>
+                </section>
+				<section>
+                    <h2>Slide 3</h2>
+                    <iframe src="../pages/sequence/sequence.html?slide"></iframe>
+                </section>
+				<section>
+                    <h2>Slide 4</h2>
+                    <iframe src="../pages/test/test.html?slide"></iframe>
+                </section>
+			</div>
+		</div>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/js/reveal.min.js"></script>
+		<script>
+			Reveal.initialize({
+                slideNumber: true,
+                hash: true,
+                history: true,
+                // autoSlide: 1000
+            });
+		</script>
+	</body>
+</html>

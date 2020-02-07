@@ -18,13 +18,16 @@
                 touch-action: none;
             }
         </style>
-        <!--script src="https://cdn.babylonjs.com/babylon.js"></script-->
+        <script src="https://cdn.babylonjs.com/babylon.js"></script>
         <!-- script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js"></script-->
-        <script src="babylon.max.js"></script>
+        <!-- script src="babylon.max.js"></script -->
         <script src="https://code.jquery.com/pep/0.4.3/pep.js"></script>
+        <script src="../../libs/common.js"></script>
+        <script src="test.js"></script>
+
     </head>
     <body>
-        <script type="application/vertexShader" id="vertexShaderCode">
+        <!-- script type="application/vertexShader" id="vertexShaderCode">
             precision highp float;
 
             // Attributes
@@ -42,7 +45,7 @@
                 vUV = uv;
             }
         
-        </script>        
+        </!-- script>        
         <script type="application/fragmentShader" id="fragmentShaderCode">
             precision highp float;
             varying vec2 vUV;
@@ -52,9 +55,8 @@
             void main(void) {
                 gl_FragColor = vec4(vUV,0.0,1.0); // texture2D(textureSampler, vUV);
             }
-        </script>        
+        </script -->        
 
         <canvas id="renderCanvas" touch-action="none"></canvas> //touch-action="none" for best results from PEP
-        <script src="test.js"></script>
     </body>
 </html>
