@@ -1,16 +1,20 @@
 let canvas,engine,scene
 let camera
 let light1, light2
-
 let sphere, model
-
 let model2
 
-document.addEventListener("DOMContentLoaded", e=> {
+document.addEventListener("DOMContentLoaded", () => {
+    setup()
+    scene.registerBeforeRender(tick)
+    engine.runRenderLoop(() => scene.render())
+    window.addEventListener("resize", () => engine.resize())
+})
+
+function setup() {
     canvas = document.getElementById("renderCanvas")
     engine = new BABYLON.Engine(canvas, true)
     scene = new BABYLON.Scene(engine)
-
     camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 20, 
         new BABYLON.Vector3(0,0,0), scene)
@@ -20,19 +24,52 @@ document.addEventListener("DOMContentLoaded", e=> {
     light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
     light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
+
     populateScene()
     
-    scene.registerBeforeRender(tick)
-    engine.runRenderLoop(() => scene.render())
-    window.addEventListener("resize", () => engine.resize())
-
-    
     scene.onKeyboardObservable.add(onKeyEvent);
+    handlePointer()
+}
+
+
+function handlePointer() {
     let clicked = false
     let oldy
-    scene.onPointerObservable.add((pointerInfo) => {      		
+    scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
-			case BABYLON.PointerEventTypes.POINTERDOWN:
+            case BABYLON.PointerEventTypes.POINTERDOWN:
+                onpointerdown(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERUP:
+                if(clicked) onpointerup(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERMOVE:
+                if(clicked) onpointerdrag(pointerInfo)
+                break
+        }
+    });
+    function onpointerdown(pointerInfo) {
+        console.log(pointerInfo)
+        if(pointerInfo.event.offsetX<100) {
+            clicked = true
+            oldy = pointerInfo.event.offsetY
+            setTimeout(() => camera.detachControl(canvas))
+        }
+    }
+    function onpointerup(pointerInfo) {
+        clicked = false
+        camera.attachControl(canvas, true); 
+    }
+    function onpointerdrag(pointerInfo) {
+        let y = pointerInfo.event.offsetY
+        let dy = y-oldy
+        oldy = y
+        model2.pivot.position.y -= dy*0.01
+    }
+
+}
+
+/*
                 console.log(pointerInfo)
                 const radius = 3
                 const obj = model2.pivot
@@ -54,11 +91,11 @@ document.addEventListener("DOMContentLoaded", e=> {
                 }
                 
 
-                /*
+                / *
 				if(pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground) {
                     pointerDown(pointerInfo.pickInfo.pickedMesh)
                 }
-                */
+                * /
 				break;
 			case BABYLON.PointerEventTypes.POINTERUP:
                 if(clicked) { camera.attachControl(canvas, true); clicked = false }
@@ -75,6 +112,17 @@ document.addEventListener("DOMContentLoaded", e=> {
 				break;
         }
     });
+    }
+}
+
+
+function onPointerEvent(pointerInfo) {
+
+}    
+    scene.onPointerObservable.add((pointerInfo) => {      		
+        switch (pointerInfo.type) {
+			case BABYLON.PointerEventTypes.POINTERDOWN:
+                
 })
 
 var pointerDown = function (mesh) {
@@ -110,6 +158,7 @@ currentMesh.position.addInPlace(diff);
 startingPoint = current;
 
 }
+*/
 
 
 function onKeyEvent(kbInfo) {
@@ -146,7 +195,6 @@ class PolyhedronModel extends GeometricModel {
     update() {
         const y0 = -this.pivot.position.y
 
-
         const V3 = BABYLON.Vector3
         const Transform = V3.TransformCoordinates
         const basePts = this.data.vertices.map(v => Transform(v.scale(2), this.matrix))
@@ -160,7 +208,7 @@ class PolyhedronModel extends GeometricModel {
             const pb = basePts[b]
             if(ins[a] != ins[b]) {
                 let p = V3.Lerp(pa,pb,(y0-pa.y)/(pb.y-pa.y))
-                this.addVertex(p, 0.15) 
+                // this.addVertex(p, 0.15) 
                 tb[a+","+b] = tb[b+","+a] = p
             }
             this.addEdge(pa,pb,0.05)            
@@ -202,25 +250,13 @@ function populateScene() {
     model2 = new PolyhedronModel(PolyhedronData.p6)
     model2.update()
 
+    /*
     sphere = BABYLON.MeshBuilder.CreateSphere('ss', {diameter:2}, scene)
     sphere.material = new BABYLON.StandardMaterial('ssmat',scene)
     sphere.material.alpha = 0.2
-
-
-    /*
-
-    model = new PolyhedronModel("cube", PolyhedronData.p6)
-    model.update()
-
-    let disc = BABYLON.MeshBuilder.CreateDisc('a', {radius: 3, arc: 2*Math.PI, tessellation: 12, sideOrientation: BABYLON.Mesh.DOUBLESIDE}, scene)
-    disc.rotation.x=Math.PI/2
     */
-    const myPlane = BABYLON.MeshBuilder.CreateGround("myPlane", {
-        width: 10, height: 10}, scene)
-    const planeMat = myPlane.material = new BABYLON.StandardMaterial('myPlane-mat', scene)
-    planeMat.diffuseColor.set(0.5,0.7,0.9)
-    planeMat.backFaceCulling = false
-    planeMat.alpha = 0.5
+
+    const paper = createPaper()
 
     showWorldAxis(3)
 
@@ -239,3 +275,50 @@ function tick() {
     // sphere.position.x = Math.cos(performance.now()*0.001) * 2
 }
 
+
+function createPaper() {
+    const w = 10, h = 8
+    const t = 0.1
+
+    const pivot = new BABYLON.Mesh('paper-pivot', scene)
+
+    const plane = BABYLON.MeshBuilder.CreateGround("paper-ground", {
+        width: w, height: h}, scene)
+    const planeMat = plane.material = new BABYLON.StandardMaterial('paper-ground-mat', scene)
+    planeMat.diffuseColor.set(0.5,0.7,0.9)
+    planeMat.backFaceCulling = false
+    planeMat.alpha = 0.5
+    plane.parent = pivot
+
+    const borderMat = new BABYLON.StandardMaterial('paper-border-mat', scene)
+    borderMat.diffuseColor.set(0.2,0.4,0.6)
+    const box = BABYLON.MeshBuilder.CreateBox('paper-box', {size:t}, scene)
+    box.parent = pivot
+    box.material = borderMat
+    const boxes = [box]
+    for(let i = 1; i<8; i++) 
+    {
+        const inst = box.createInstance('paper-box-'+i)
+        inst.parent = pivot
+        boxes.push(inst)
+    }
+    const x = w/2, z = h/2
+    
+    boxes[0].position.set(-x,0,-z)
+    boxes[1].position.set( x,0,-z)
+    boxes[2].position.set(-x,0, z)
+    boxes[3].position.set( x,0, z)
+    
+
+    boxes[4].position.set( 0,0,-z)
+    boxes[5].position.set( 0,0, z)
+    boxes[4].scaling.set(w/t-1,1,1)
+    boxes[5].scaling.set(w/t-1,1,1)
+    boxes[6].position.set(-x,0, 0)
+    boxes[7].position.set( x,0, 0)
+    boxes[6].scaling.set(1,1,h/t-1)
+    boxes[7].scaling.set(1,1,h/t-1)
+    
+
+    return pivot
+}

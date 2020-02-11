@@ -1,20 +1,46 @@
 let canvas,engine,scene
 let camera
 let light1, light2
+let sg 
+
 
 function initialize() {
     canvas = document.getElementById("renderCanvas")
     engine = new BABYLON.Engine(canvas, true)
     scene = new BABYLON.Scene(engine)
     camera = new BABYLON.ArcRotateCamera("Camera", 
-    Math.PI / 2, Math.PI / 2, 10, 
-    new BABYLON.Vector3(0,0,0), scene)
+        Math.PI / 2, Math.PI / 2, 10, 
+        new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
+    
 
-    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 1, -1), scene)    
+    // light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
+    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, 0), scene)    
+    light1 = new BABYLON.PointLight("light1", new BABYLON.Vector3(0, 0, 0), scene)    
+    light1.parent = camera
 
-    let model = new Model(scene)
+    // shadow
+    let shadowGenerator = sg = new BABYLON.ShadowGenerator(512, light2);
+    // shadowGenerator.useBlurVarianceShadowMap = true;
+    // shadowGenerator.blurScale = 10.0;
+    // shadowGenerator.usePoissonSampling = true
+    //sg.setDarkness(0.8)
+    // sg.usePoissonSampling=true
+    sg.useBlurExponentialShadowMap  = true
+
+    // background
+    let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+    groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
+    groundMat.ambientColor = new BABYLON.Color3(0.2, 0.2, 0.2);    
+    let ground = BABYLON.MeshBuilder.CreateGround('ground', {width:10, height:10}, scene)
+    ground.position.y = -3
+    ground.material = groundMat;
+    ground.receiveShadows = true;
+
+
+    // model
+    let model = new Model(scene, shadowGenerator)
+
 
     let oldTime = performance.now()
     let currentDim = 0
@@ -48,12 +74,14 @@ function stop() {
 
 
 class Model {
-    constructor(scene) {
+    constructor(scene, shadowGenerator) {
+        let rl = shadowGenerator.getShadowMap().renderList;
         this.scene = scene
         this.vertices = []
         let edgeCount = 0
         for(let i=0; i<32; i++) {
             let sphere = BABYLON.MeshBuilder.CreateSphere("sphere-"+i, {diameter:0.1}, scene)
+            rl.push(sphere)
             let mat = sphere.material = new BABYLON.StandardMaterial('mat-'+i, scene)
             mat.diffuseColor.set(0.8,0.2,0.2)
             this.vertices.push(sphere)
@@ -61,6 +89,7 @@ class Model {
             for(let j=0; j<5; j++) {
                 if((i>>j)&1) {
                     let edge = BABYLON.MeshBuilder.CreateCylinder("cyl-"+edgeCount, {diameter:0.05, height:1}, scene)
+                    rl.push(edge)
                     edge.mat = new BABYLON.StandardMaterial('mat2-'+edgeCount, scene)
                     edge.mat.diffuseColor.set(0.5,0.5,0.5)
                     sphere.edges[j] = edge
@@ -133,21 +162,6 @@ class Model {
             edge.rotationQuaternion = BABYLON.Quaternion.RotationAxis(axis, angle);    
         }    
         else edge.rotationQuaternion = BABYLON.Quaternion.RotationAxis(up,0)
-
-        // First of all we have to set the pivot not in the center of the cylinder:    
-        // cylinder.setPivotMatrix(BABYLON.Matrix.Translation(0, -distance / 2, 0));     
-        // Then move the cylinder to red sphere    
-        // cylinder.position = redSphere.position;   
-        // Then find the vector between spheres   
-        // var v1 = vend.subtract(vstart);    v1.normalize();    
-        // var v2 = new BABYLON.Vector3(0, 1, 0);       
-        // Using cross we will have a vector perpendicular to both vectors    
-        // var axis = BABYLON.Vector3.Cross(v1, v2);    axis.normalize();   
-        // console.log(axis);       
-        // Angle between vectors    var angle = BABYLON.Vector3.Dot(v1, v2);    
-        // console.log(angle);        
-        // Then using axis rotation the result is obvious    
-        // cylinder.rotationQuaternion = BABYLON.Quaternion.RotationAxis(axis, -Math.PI / 2 + angle);
     }
 
 }

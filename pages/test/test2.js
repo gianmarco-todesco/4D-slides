@@ -8,7 +8,7 @@ let ph
 
 
 function populateScene() {
-    createModel(PolyhedronData.p12)
+    createModel(PolyhedronData.p6)
 }
 
 
@@ -47,7 +47,37 @@ function tick() {
     // sphere.position.x = Math.cos(performance.now()*0.001) * 2
 }
 
+let V,H,U,K,D2,D1
+
 function createModel(data) {
+    data.vertices.forEach(p=>p.copyFrom(p.scale(15/2)))
+    U = BABYLON.Vector3.Distance(data.vertices[0],data.vertices[1])
+
+    const d = data.vertices[0].clone().normalize()
+    console.log(d)
+    K = 40 / (U*Math.sqrt(3))
+
+    V = U*U*U
+
+
+    data.vertices.forEach(p=>{
+        const z = BABYLON.Vector3.Dot(d, p)
+        const p1 = p.add(d.scale((z*K-z)))
+        p.copyFrom(p1)
+    })
+
+
+    console.log("K=",K)
+    console.log("U=",U)
+    D1 = BABYLON.Vector3.Distance(data.vertices[1],data.vertices[4])
+    D2 = BABYLON.Vector3.Distance(data.vertices[0],data.vertices[5])
+    
+    console.log("D1=",D1)
+    console.log("D2=",D2)
+
+    H = BABYLON.Vector3.Distance(data.vertices[0],data.vertices[7])
+    console.log("H=",H)
+
     data.vertices.forEach(p=>addDot(p))
     data.edges.forEach(([a,b])=>addEdge(data.vertices[a], data.vertices[b]))
     const lineArray = []
