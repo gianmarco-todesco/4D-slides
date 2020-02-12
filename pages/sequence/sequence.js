@@ -2,7 +2,13 @@ let canvas,engine,scene
 let camera
 let light1, light2
 let sg 
+let renderTarget
 
+let targetDim=0, currentDim=0
+let oldTime = performance.now()
+let currentDimSpeed = 0.001
+
+let model
 
 function initialize() {
     canvas = document.getElementById("renderCanvas")
@@ -14,52 +20,45 @@ function initialize() {
     camera.attachControl(canvas, true)
     
 
+    scene.ambientColor.set(0.5,0.5,0.5)
+
+    renderTarget = createRenderTarget()
+    
     // light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
     light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, 0), scene)    
     light1 = new BABYLON.PointLight("light1", new BABYLON.Vector3(0, 0, 0), scene)    
     light1.parent = camera
 
     // shadow
-    let shadowGenerator = sg = new BABYLON.ShadowGenerator(512, light2);
+    //let shadowGenerator = sg = new BABYLON.ShadowGenerator(512, light2);
     // shadowGenerator.useBlurVarianceShadowMap = true;
     // shadowGenerator.blurScale = 10.0;
     // shadowGenerator.usePoissonSampling = true
     //sg.setDarkness(0.8)
     // sg.usePoissonSampling=true
-    sg.useBlurExponentialShadowMap  = true
+    //sg.useBlurExponentialShadowMap  = true
 
     // background
-    let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-    groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.2);
-    groundMat.ambientColor = new BABYLON.Color3(0.2, 0.2, 0.2);    
-    let ground = BABYLON.MeshBuilder.CreateGround('ground', {width:10, height:10}, scene)
-    ground.position.y = -3
-    ground.material = groundMat;
-    ground.receiveShadows = true;
+    createGround()
 
+/*
+    let plane = BABYLON.MeshBuilder.CreatePlane('a', {size:3}, scene)
+    plane.material = new BABYLON.StandardMaterial("planeMat", scene);
+    plane.material.diffuseTexture = renderTarget
+
+    plane.position.x = 3
+*/
 
     // model
-    let model = new Model(scene, shadowGenerator)
+    model = new Model(scene)
 
 
-    let oldTime = performance.now()
-    let currentDim = 0
-    let currentDimSpeed = 0.001
-    let currentDimDir = 1
     
-    scene.registerBeforeRender(function () {
-        let time = performance.now()
-        let deltaTime = time - oldTime
-        oldTime = time
-    
-        currentDim += currentDimSpeed * currentDimDir * deltaTime
-        if(currentDimDir>0 && currentDim >= 5) { currentDim = 4.9999; currentDimDir = -1 }
-        else if(currentDimDir<0 && currentDim <= 0.0) { currentDim = 0; currentDimDir = 1 } 
-        model.updatePositions(currentDim)
-    })
+    scene.registerBeforeRender(tick)
     
     window.addEventListener("resize", () => engine.resize())
     
+    scene.onKeyboardObservable.add(onKeyEvent);
 }
 
 function start() {
@@ -70,12 +69,66 @@ function stop() {
     engine.stopRenderLoop()    
 }
 
+function createGround() {
+    let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+    groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+    groundMat.ambientColor = new BABYLON.Color3(0.5, 0.5, 0.5); 
+    groundMat.specularColor.set(0,0,0)   
+    let ground = BABYLON.MeshBuilder.CreateGround('ground', {
+        width:5, 
+        height:5}, scene)
+    ground.position.y = -3
+    ground.material = groundMat;
+    //ground.receiveShadows = true;
+    groundMat.diffuseTexture = renderTarget
+}
 
+function createRenderTarget() {
+    let rtt = new BABYLON.RenderTargetTexture("rt", 512, scene)
+    scene.customRenderTargets.push(rtt);
+
+
+    let rttCamera = new BABYLON.FreeCamera('rttCamera', new BABYLON.Vector3(0,10,0), scene)
+    // rttCamera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA
+    rttCamera.rotation.x = Math.PI/2
+    rtt.activeCamera = rttCamera
+
+    let rttMaterial = new BABYLON.StandardMaterial('rtt-mat', scene)
+    rttMaterial.diffuseColor.set(0,0,0)
+    rttMaterial.specularColor.set(0,0,0)
+    rttMaterial.emissiveColor.set(0,0,0)
+    rttMaterial.ambientColor.set(0,0,0)
+    
+    let bgColor = new BABYLON.Color3()
+
+    
+    rtt.onBeforeRender = (e) => {
+        rtt.renderList.forEach(mesh => {
+            mesh._saved = mesh.material
+            mesh.material =  rttMaterial
+        })
+        bgColor.copyFrom(scene.clearColor)
+        scene.clearColor.set(.9,.9,.9)
+    };
+    rtt.onAfterRender = () => {
+        rtt.renderList.forEach(mesh => {
+            mesh.material =  mesh._saved
+        })
+        scene.clearColor.copyFrom(bgColor)
+    };
+    
+
+    return rtt
+}
 
 
 class Model {
-    constructor(scene, shadowGenerator) {
-        let rl = shadowGenerator.getShadowMap().renderList;
+    constructor(scene) {
+        // let rl = shadowGenerator.getShadowMap().renderList;
+        // let rl = []
+        let rl = []
+
+
         this.scene = scene
         this.vertices = []
         let edgeCount = 0
@@ -98,6 +151,8 @@ class Model {
             }
         }
         
+        renderTarget.renderList = rl
+
         this.updatePositions(4.99)
     }
     updatePositions(v) {
@@ -164,4 +219,38 @@ class Model {
         else edge.rotationQuaternion = BABYLON.Quaternion.RotationAxis(up,0)
     }
 
+}
+
+
+function tick() {
+    
+    let time = performance.now()
+    let deltaTime = time - oldTime
+    oldTime = time
+
+    let oldDim = currentDim
+    if(currentDim < targetDim) {
+        currentDim += currentDimSpeed * deltaTime
+        if(currentDim >= targetDim) currentDim = targetDim
+    } else if(currentDim > targetDim) {
+        currentDim -= currentDimSpeed * deltaTime
+        if(currentDim <= targetDim) currentDim = targetDim
+    }
+
+    if(oldDim != currentDim)
+        model.updatePositions(currentDim)
+}
+
+function onKeyEvent(kbInfo) {
+    switch (kbInfo.type) {
+        case BABYLON.KeyboardEventTypes.KEYDOWN:
+            const key = kbInfo.event.keyCode
+            if(49<=key && key<=49+4) {
+                targetDim = Math.min(4.999, key-48)
+                
+            }
+            break;
+        case BABYLON.KeyboardEventTypes.KEYUP:
+            break;
+    }
 }
