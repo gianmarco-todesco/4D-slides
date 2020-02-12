@@ -5,6 +5,7 @@ class PolychoronData {
 }
 
 
+
 PolychoronData.p8 = (() => {
     const r = 1
     let pc = new PolychoronData()
@@ -27,5 +28,4 @@ PolychoronData.p8 = (() => {
     return pc
 
 })()
-
 

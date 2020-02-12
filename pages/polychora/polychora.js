@@ -17,13 +17,16 @@ document.addEventListener("DOMContentLoaded", e=> {
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 5
     light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, -10), scene)
-    
+    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
+    light2.parent = camera
+
     populateScene()
     
     scene.registerBeforeRender(tick)
     engine.runRenderLoop(() => scene.render())
     window.addEventListener("resize", () => engine.resize())
+
+    scene.onKeyboardObservable.add(onKeyEvent);
 })
 
 
@@ -34,7 +37,7 @@ function populateScene() {
     sphere.material.diffuseColor.set(0.8,0.7,0.8)
     */
 
-    model = new PolychoronModel('tesseract', PolychoronData.p8)
+    model = new PolychoronModel('tesseract', PolychoronData2.p5)
     model.update()
 
 
@@ -49,7 +52,7 @@ function tick() {
 function placeCylinder(cylinder, vStart, vEnd) {
     const distance = BABYLON.Vector3.Distance(vStart,vEnd )
     BABYLON.Vector3.LerpToRef(vStart,vEnd,0.5,cylinder.position)       
-    cylinder.scaling.set(1,distance*0.9,1)
+    cylinder.scaling.set(1,distance,1)
 
     const delta = vEnd.subtract(vStart).scale(1.0/distance)
     const up = new BABYLON.Vector3(0, 1, 0)
@@ -65,9 +68,10 @@ function placeCylinder(cylinder, vStart, vEnd) {
 class PolychoronModel {
     constructor(name, data) {
         this.data = data
-        this.pivot = new BABYLON.Mesh(name, scene)
+        const pivot = this.pivot = new BABYLON.Mesh(name, scene)
 
         let dot = BABYLON.MeshBuilder.CreateSphere(name+'-dot', {diameter:0.2}, scene)
+        dot.parent = pivot
         let mat = dot.material = new BABYLON.StandardMaterial(name+'dot-mat', scene)
         mat.diffuseColor.set(0.6,0.1,0.7)
         this.vertices = [dot]
@@ -77,6 +81,7 @@ class PolychoronModel {
         }
         
         let edge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.1, height:1}, scene)
+        edge.parent = pivot
         mat = edge.material = new BABYLON.StandardMaterial(name+'edge-mat', scene)
         mat.diffuseColor.set(0.6,0.6,0.6)
         this.edges = [edge]
@@ -114,5 +119,34 @@ class PolychoronModel {
         })
 
 
+    }
+}
+
+
+
+
+function onKeyEvent(kbInfo) {
+    switch (kbInfo.type) {
+        case BABYLON.KeyboardEventTypes.KEYDOWN:
+            const key = kbInfo.event.keyCode
+            if(49<=key && key<=49+6) {
+                model.pivot.dispose()
+                let data
+                switch(key)
+                {
+                    case 49: data = PolychoronData2.p5; break
+                    case 50: data = PolychoronData2.p8; break
+                    case 51: data = PolychoronData2.p16; break
+                    case 52: data = PolychoronData2.p24; break
+                    case 53: data = PolychoronData2.p120; break
+                    case 54: data = PolychoronData2.p600; break
+                    default: data = PolychoronData2.p5; break
+                }
+                model = new PolychoronModel('pc', data)
+                model.update()                
+            }
+            break;
+        case BABYLON.KeyboardEventTypes.KEYUP:
+            break;
     }
 }
