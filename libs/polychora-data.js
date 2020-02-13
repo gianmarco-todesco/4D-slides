@@ -1,4 +1,4 @@
-class PolychoronData2 {
+class PolychoronData {
     constructor(vertices, faces, cells) {
         let i
         this.vertices = []
@@ -29,7 +29,7 @@ class PolychoronData2 {
             let a = f[f.length-1]
             f.forEach(b => {
                 const id = a + "," + b
-                if(td[i]===undefined) {
+                if(td[id]===undefined) {
                     td[id] = td[b+','+a] = true
                     this.edges.push([a,b])                    
                 }
@@ -39,7 +39,7 @@ class PolychoronData2 {
     }
 }
 
-PolychoronData2.p5 = new PolychoronData2(
+PolychoronData.p5 = new PolychoronData(
     [
         0.000000, 0.000000, 1.000000, 0.000000,
         0.559015, 0.559015, -0.250000, -0.559015,
@@ -68,7 +68,7 @@ PolychoronData2.p5 = new PolychoronData2(
     ]
 )    
 
-PolychoronData2.p8 = new PolychoronData2(
+PolychoronData.p8 = new PolychoronData(
     [
         -0.500000, -0.500000, -0.500000, -0.500000,
         -0.500000, -0.500000, 0.500000, -0.500000,
@@ -126,7 +126,7 @@ PolychoronData2.p8 = new PolychoronData2(
 )    
 
 
-PolychoronData2.p16 = new PolychoronData2(
+PolychoronData.p16 = new PolychoronData(
     [
         0.000000, 0.000000, 0.000000, -1.000000,
         -1.000000, 0.000000, 0.000000, 0.000000,
@@ -191,7 +191,7 @@ PolychoronData2.p16 = new PolychoronData2(
     ]
 )
 
-PolychoronData2.p24 = new PolychoronData2(
+PolychoronData.p24 = new PolychoronData(
     [
         0.000000, 0.000000, 0.000000, -1.000000,
         -1.000000, 0.000000, 0.000000, 0.000000,
@@ -344,7 +344,7 @@ PolychoronData2.p24 = new PolychoronData2(
     ]    
 )
 
-PolychoronData2.p120 = new PolychoronData2(
+PolychoronData.p120 = new PolychoronData(
     [
         0.135045, 0.000000, 0.353553, 0.925615,
         -0.135045, 0.000000, 0.353553, 0.925615,
@@ -1793,7 +1793,7 @@ PolychoronData2.p120 = new PolychoronData2(
     ]
 )
 
-PolychoronData2.p600 = new PolychoronData2(
+PolychoronData.p600 = new PolychoronData(
     [
         0.000000, 0.000000, 0.000000, 1.000000,
         0.000000, 0.000000, 0.000000, -1.000000,

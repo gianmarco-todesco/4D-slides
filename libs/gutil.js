@@ -86,22 +86,17 @@ class GeometricModel {
         this.faces = { positions:[], indices:[], vCount:0, fCount:0 }
     }
     endUpdate() {
-        if(this.usedVertices == 0) this.dot.visibility = 0
-        else this.dot.visibility = 1
-        for(let i = this.vertices.length - 1; i>=this.usedVertices && i>0; i--) {
-            this.vertices[i].dispose()
-        }
-        if(this.vertices.length > this.usedVertices) {
-            this.vertices.splice(this.usedVertices, this.vertices.length - this.usedVertices)
-        }
-        if(this.usedEdges == 0) this.edge.visibility = 0
-        else this.edge.visibility = 1
-        for(let i = this.edges.length - 1; i>=this.usedEdges && i>0; i--) {
-            this.edges[i].dispose()
-        }
-        if(this.edges.length > this.usedEdges) {
-            this.edges.splice(this.usedEdges, this.edges.length - this.usedEdges)
-        }
+        this.dot.visibility = this.usedVertices == 0 ? 0 : 1
+        let i
+        i = this.vertices.length-1
+        while(i>=this.usedVertices && i>0) this.vertices[i--].dispose()
+        if(i+1<this.vertices.length) this.vertices.splice(i+1, this.vertices.length-(i+1))
+
+        this.edge.visibility = this.usedEdges == 0 ? 0 : 1
+        i = this.edges.length-1
+        while(i>=this.usedEdges && i>0) this.edges[i--].dispose()
+        if(i+1<this.edges.length) this.edges.splice(i+1, this.edges.length-(i+1))
+ 
         if(this.faces.fCount == 0) this.facesMesh.visibility = 0
         else {
             var vertexData = new BABYLON.VertexData();
@@ -109,6 +104,23 @@ class GeometricModel {
             vertexData.indices = this.faces.indices
             vertexData.applyToMesh(this.facesMesh);
             this.facesMesh.visibility = 1
+        }
+
+        // check
+        const q = scene.meshes.filter(mesh=>mesh.name.startsWith("model-dot-inst"))
+        if(this.usedVertices > 0) {
+            if(this.usedVertices-1 != q.length) {
+
+                console.log(q.length, this.usedVertices)
+                throw "Bad! (1)"    
+            }
+        } else {
+            if(q.length != 0) {
+                console.log(q.length, this.usedVertices)
+                throw "Bad! (2)"    
+
+            }
+
         }
     }
     addVertex(pos, r) {
