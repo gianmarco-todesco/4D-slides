@@ -135,8 +135,6 @@ BABYLON.Effect.ShadersStore[shaderName + "VertexShader"]= `
     }
 `
 
-/*
-
 BABYLON.Effect.ShadersStore[shaderName + "VertexShader"]= `
     precision highp float;
 
@@ -202,8 +200,6 @@ BABYLON.Effect.ShadersStore[shaderName + "VertexShader"]= `
       
     }
 `
-
-*/
 
 BABYLON.Effect.ShadersStore[shaderName + "FragmentShader"]= `
     precision highp float;
@@ -306,14 +302,14 @@ let R = 0.0;
 let dr = 0.000001;
 
 scene.registerBeforeRender(() => {
-    const theta = performance.now()*0.0003
+    const theta = performance.now()*0.001
     const phi = performance.now()*0.001
     amigaMaterial.setFloat('u_cs', Math.cos(theta))
     amigaMaterial.setFloat('u_sn', Math.sin(theta))
     
    //    arr2_buff.update(arr2);
     
-    amigaMaterial.setFloat('time',performance.now()*0.001)
+    amigaMaterial.setFloat('time',performance.now()*0.003)
 })
 
 window.addEventListener("resize", () => engine.resize())
