@@ -1,49 +1,48 @@
-let canvas,engine,scene
-let camera
-let light1, light2
-let model
-let sphere
+"use strict";
+
+const slide = {
+    name:"Bubbles"
+}
 
 function setup() {
-    canvas = document.getElementById("renderCanvas")
-    engine = new BABYLON.Engine(canvas, true)
-    scene = new BABYLON.Scene(engine)
+    const canvas = slide.canvas = document.getElementById("renderCanvas")
+    const engine = slide.engine = new BABYLON.Engine(canvas, true)
+    const scene = slide.scene = new BABYLON.Scene(engine)
 
-    camera = new BABYLON.ArcRotateCamera("Camera", 
+    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 10, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 5
     
-    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
+    const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
+    const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
     populateScene()
     
     scene.registerBeforeRender(tick)
     engine.runRenderLoop(() => scene.render())
-    window.addEventListener("resize", () => engine.resize())
+    window.addEventListener("resize", onResize)
 }
 
 function cleanup() {
-    engine.stopRenderLoop()
-    scene.dispose
-    scene = undefined
-    engine.dispose
-    engine = undefined
-    camera = undefined
+    window.removeEventListener("resize", onResize)
+    if(slide.engine) {
+        slide.engine.stopRenderLoop()
+        slide.scene.dispose()
+        slide.engine.dispose()
+        delete slide.scene
+        delete slide.engine
+    }
+}
 
+function onResize() {
+    slide.engine.resize()
 }
 
 
-document.addEventListener("DOMContentLoaded", setup)
-
-
-function populateScene() {
-    model = new PolychoronBubbleModel(PolychoronData.p8)
-}
 
 let stop = false
 
@@ -51,7 +50,7 @@ function tick() {
     const theta = performance.now() * 0.0001;
     const cs = Math.cos(theta);
     const sn = Math.sin(theta);
-    model.mesh.material.setMatrix('rot4', BABYLON.Matrix.FromArray([
+    slide.model.mesh.material.setMatrix('rot4', BABYLON.Matrix.FromArray([
         cs,0,0,-sn,
         0,1,0,0,
         0,0,1,0,
@@ -62,7 +61,7 @@ function tick() {
 
 // ==================================================================
 
-uffa = {}
+let uffa = {}
 
 
 
@@ -74,6 +73,7 @@ class PolychoronBubbleModel {
     }
 
     buildMesh(m) {
+        const scene = slide.scene
         let n = 20
         let mesh = this.mesh = new BABYLON.Mesh("custom", scene);
         let positions = []
@@ -170,7 +170,8 @@ class PolychoronBubbleModel {
             assign(e0Array,i,e0.scale(r))
             assign(e1Array,i,e1.scale(r))            
         })
-        
+        const engine = slide.engine
+
         let buffer = new BABYLON.Buffer(engine, originArray , true, 4, false, true);
         mesh.setVerticesBuffer(buffer.createVertexBuffer("origin", 0, 4))
         buffer = new BABYLON.Buffer(engine, e0Array , true, 4, false, true);
@@ -185,6 +186,7 @@ class PolychoronBubbleModel {
     }
 
     createShaderMaterial() {
+        const scene = slide.scene
         const shaderName = 'hyperBubble'
         var mat = new BABYLON.ShaderMaterial("bubbleMaterial", scene, {
                 vertex: shaderName,
@@ -211,6 +213,9 @@ class PolychoronBubbleModel {
 }
 
 
+function populateScene() {
+    slide.model = new PolychoronBubbleModel(PolychoronData.p8)
+}
 
 
 (()=>{

@@ -1,44 +1,50 @@
-let canvas,engine,scene
-let camera
-let light1, light2
+const slide = {
+    name: "Polychora"
+}
 
-let sphere, model
+function setup() {
 
-document.addEventListener("DOMContentLoaded", e=> {
-    canvas = document.getElementById("renderCanvas")
-    engine = new BABYLON.Engine(canvas, true)
-    scene = new BABYLON.Scene(engine)
+    let canvas = slide.canvas = document.getElementById("renderCanvas")
+    let engine = slide.engine = new BABYLON.Engine(canvas, true)
+    let scene = slide.scene = new BABYLON.Scene(engine)
 
 
-    camera = new BABYLON.ArcRotateCamera("Camera", 
+    let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 10, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 5
-    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
+    let light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
+    let light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
-    populateScene()
+    populateScene(scene)
     
     scene.registerBeforeRender(tick)
     engine.runRenderLoop(() => scene.render())
     window.addEventListener("resize", () => engine.resize())
-
     scene.onKeyboardObservable.add(onKeyEvent);
-})
+}
+
+function cleanup() {
+    slide.engine.stopRenderLoop()    
+    slide.scene.dispose()
+    delete slide.scene
+    slide.engine.dispose()
+    delete slide.engine
+}
 
 
-function populateScene() {
+function populateScene(scene) {
     /*
     sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {diameter:2}, scene)
     sphere.material = new BABYLON.StandardMaterial('sphere-mat', scene)
     sphere.material.diffuseColor.set(0.8,0.7,0.8)
     */
 
-    model = new PolychoronModel('tesseract', PolychoronData2.p5)
-    model.update()
+    slide.model = new PolychoronModel('tesseract', PolychoronData.p5, scene)
+    slide.model.update()
 
 
 
@@ -46,7 +52,7 @@ function populateScene() {
 
 function tick() {
     // sphere.position.x = Math.cos(performance.now()*0.001) * 2
-    model.update()
+    slide.model.update()
 }
 
 function placeCylinder(cylinder, vStart, vEnd) {
@@ -66,7 +72,7 @@ function placeCylinder(cylinder, vStart, vEnd) {
 }
 
 class PolychoronModel {
-    constructor(name, data) {
+    constructor(name, data, scene) {
         this.data = data
         const pivot = this.pivot = new BABYLON.Mesh(name, scene)
 
@@ -130,20 +136,20 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             const key = kbInfo.event.keyCode
             if(49<=key && key<=49+6) {
-                model.pivot.dispose()
+                slide.model.pivot.dispose()
                 let data
                 switch(key)
                 {
-                    case 49: data = PolychoronData2.p5; break
-                    case 50: data = PolychoronData2.p8; break
-                    case 51: data = PolychoronData2.p16; break
-                    case 52: data = PolychoronData2.p24; break
-                    case 53: data = PolychoronData2.p120; break
-                    case 54: data = PolychoronData2.p600; break
-                    default: data = PolychoronData2.p5; break
+                    case 49: data = PolychoronData.p5; break
+                    case 50: data = PolychoronData.p8; break
+                    case 51: data = PolychoronData.p16; break
+                    case 52: data = PolychoronData.p24; break
+                    case 53: data = PolychoronData.p120; break
+                    case 54: data = PolychoronData.p600; break
+                    default: data = PolychoronData.p5; break
                 }
-                model = new PolychoronModel('pc', data)
-                model.update()                
+                slide.model = new PolychoronModel('pc', data, slide.scene)
+                slide.model.update()                
             }
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:

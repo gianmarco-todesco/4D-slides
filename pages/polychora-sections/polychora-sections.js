@@ -1,64 +1,64 @@
-let canvas,engine,scene
-let camera
-let light1, light2
-let model
-let sphere
+"use strict";
+
+const slide = {
+    name:"4D sections"
+}
 
 function setup() {
-    canvas = document.getElementById("renderCanvas")
-    engine = new BABYLON.Engine(canvas, true)
-    scene = new BABYLON.Scene(engine)
+    const canvas = slide.canvas = document.getElementById("renderCanvas")
+    const engine = slide.engine = new BABYLON.Engine(canvas, true)
+    const scene = slide.scene = new BABYLON.Scene(engine)
 
-    camera = new BABYLON.ArcRotateCamera("Camera", 
+    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 10, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 5
     
-    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
+    const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
+    const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
     populateScene()
     
     scene.registerBeforeRender(tick)
     engine.runRenderLoop(() => scene.render())
-    window.addEventListener("resize", () => engine.resize())
+    window.addEventListener("resize", onResize)
 }
 
 function cleanup() {
-    engine.stopRenderLoop()
-    scene.dispose
-    scene = undefined
-    engine.dispose
-    engine = undefined
-    camera = undefined
+    window.removeEventListener("resize", onResize)
+    slide.engine.stopRenderLoop()
+    slide.scene.dispose
+    delete slide.scene
+    slide.engine.dispose
+    delete slide.engine    
+}
 
+function onResize() {
+    slide.engine.resize()
 }
 
 
-document.addEventListener("DOMContentLoaded", setup)
-
-
-
 function populateScene() {
-    sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {diameter:0.1}, scene)
+    const scene = slide.scene
+    const sphere = slide.sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {diameter:0.1}, scene)
     sphere.material = new BABYLON.StandardMaterial('sphere-mat', scene)
     sphere.material.diffuseColor.set(0.8,0.3,0.6)
 
     // model = new PolychoronSimpleModel(PolychoronData.p8)
 
-    model = new PolychoronSectionModel(PolychoronData.p8)
+    slide.model = new PolychoronSectionModel('model',PolychoronData.p8, scene)
 }
 
 let stop = false
 
 function tick() {
-    sphere.position.x = Math.cos(performance.now()*0.001) * 2
+    slide.sphere.position.x = Math.cos(performance.now()*0.001) * 2
     if(stop==false) {
-        model.w0 = Math.sin(performance.now()*0.0001)
-        model.update()
+        slide.model.w0 = Math.sin(performance.now()*0.0001)
+        slide.model.update()
     
     }    
 }
@@ -97,8 +97,8 @@ BABYLON.Vector4.Transform = function(mat, v4) {
 const uffa = {}
 
 class PolychoronSectionModel extends GeometricModel {
-    constructor(data) {
-        super()
+    constructor(name, data, scene) {
+        super(name,scene)
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
         this.w0 = 0.

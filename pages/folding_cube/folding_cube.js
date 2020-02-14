@@ -1,11 +1,71 @@
-// Folding cube 
-// by gmt(todesco@toonz.com); feb2017; feb2020 
 "use strict";
-let foldingCube;
-let unfoldingButtonsBar;
 
-function subrange(x,a,b) { return x<=a?0:x>=b?1:(x-a)/(b-a); } 
-function smooth(x) { return x*x*(3-2*x); }
+const slide = {
+    name: "Folding cube",
+}
+
+
+function setup() {
+    let canvas = slide.canvas = document.getElementById('foldingCubeCanvas');
+    let engine = slide.engine = new BABYLON.Engine(canvas, true);
+    let scene = slide.scene = new BABYLON.Scene(engine);
+    let camera = slide.camera = new BABYLON.ArcRotateCamera('camera1',
+        -1.3, 1.1, 15, new BABYLON.Vector3(0, 0, 0), scene);
+    camera.setTarget(BABYLON.Vector3.Zero());
+    camera.upperBetaLimit = Math.PI*0.5;
+    camera.lowerRadiusLimit = 10;
+    camera.wheelPrecision = 10;
+    camera.attachControl(canvas, true);
+    
+    scene.ambientColor = new BABYLON.Color3(0.3,0.3,0.3);
+    
+    let light = new BABYLON.PointLight(
+        "light0", 
+        new BABYLON.Vector3(0, 5, 0), scene);
+    light.intensity = 0.5;
+    let shadowGenerator = slide.sg = new BABYLON.ShadowGenerator(1024, light);
+    shadowGenerator.useBlurVarianceShadowMap = true;
+    shadowGenerator.blurScale = 4.0;
+    // shadowGenerator.setDarkness(0.8);
+    
+    let foldingCube = slide.foldingCube = new FoldingCube('fc', scene);
+    foldingCube.setShadowGenerator(shadowGenerator);
+    foldingCube.canvas = canvas;
+    
+    let light2 = new BABYLON.PointLight('light1',
+       new BABYLON.Vector3(0.0,0.4,0.0), scene);
+    light2.intensity = 0.3;
+    light2.parent = camera;
+    
+    let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+    groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+    groundMat.ambientColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+    let ground = slide.ground = BABYLON.Mesh.CreateGround(
+        'ground1', 24, 24, 2,
+        scene);
+    ground.position.y = -4;
+    ground.receiveShadows = true;
+    ground.material = groundMat;
+    
+    // createFoldingCubeGui(foldingCube);
+    
+    engine.runRenderLoop(function() {
+        // foldingCube.gui.tick();
+        scene.render();
+    });
+    window.addEventListener("resize", function () { engine.resize(); });
+}
+
+
+function cleanup() {
+    slide.engine.stopRenderLoop()    
+    slide.scene.dispose()
+    delete slide.scene
+    slide.engine.dispose()
+    delete slide.engine
+}
+
+
 
 //
 // class FoldingCube
@@ -234,58 +294,6 @@ function createFoldingCubeGui(canvas, scene) {
 //
 function createFoldingCubeAnimation() {
 
-    let canvas = document.getElementById('foldingCubeCanvas');
-    let engine = new BABYLON.Engine(canvas, true);
-    let scene = new BABYLON.Scene(engine);
-    let camera = new BABYLON.ArcRotateCamera('camera1',
-        -1.3, 1.1, 15, new BABYLON.Vector3(0, 0, 0), scene);
-    camera.setTarget(BABYLON.Vector3.Zero());
-    camera.upperBetaLimit = Math.PI*0.5;
-    camera.lowerRadiusLimit = 10;
-    camera.wheelPrecision = 10;
-    camera.attachControl(canvas, true);
-
-    scene.ambientColor = new BABYLON.Color3(0.3,0.3,0.3);
-
-    let light = new BABYLON.PointLight(
-        "light0", 
-        new BABYLON.Vector3(0, 5, 0), scene);
-    light.intensity = 0.5;
-    let shadowGenerator = new BABYLON.ShadowGenerator(1024, light);
-    shadowGenerator.useBlurVarianceShadowMap = true;
-    shadowGenerator.blurScale = 4.0;
-    // shadowGenerator.setDarkness(0.8);
-
-    foldingCube = new FoldingCube('fc', scene);
-    foldingCube.setShadowGenerator(shadowGenerator);
-    foldingCube.canvas = canvas;
-
-    let light2 = new BABYLON.PointLight('light1',
-       new BABYLON.Vector3(0.0,0.4,0.0), scene);
-    light2.intensity = 0.3;
-    light2.parent = camera;
-
-    let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-    groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-    groundMat.ambientColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-    let ground = BABYLON.Mesh.CreateGround(
-        'ground1', 24, 24, 2,
-        scene);
-    ground.position.y = -4;
-    ground.receiveShadows = true;
-    ground.material = groundMat;
-    
-    createFoldingCubeGui(foldingCube);
-
-    engine.runRenderLoop(function() {
-        // foldingCube.gui.tick();
-        scene.render();
-    });
-    
-    window.addEventListener("resize", function () {
-        engine.resize();
-        // foldingCube.gui.resize();
-    });
 
     return scene;
 }

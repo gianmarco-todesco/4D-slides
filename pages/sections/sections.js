@@ -1,41 +1,54 @@
-let canvas,engine,scene
-let camera
-let light1, light2
-let sphere, model
-let model2
+"use strict";
 
-document.addEventListener("DOMContentLoaded", () => {
-    setup()
-    scene.registerBeforeRender(tick)
-    engine.runRenderLoop(() => scene.render())
-    window.addEventListener("resize", () => engine.resize())
-})
+const slide = {
+    name:"3D Sections"    
+}
+
+
+console.log(PolyhedronData.p6)
 
 function setup() {
-    canvas = document.getElementById("renderCanvas")
-    engine = new BABYLON.Engine(canvas, true)
-    scene = new BABYLON.Scene(engine)
-    camera = new BABYLON.ArcRotateCamera("Camera", 
+    const canvas = slide.canvas = document.getElementById("renderCanvas")
+    const engine = slide.engine = new BABYLON.Engine(canvas, true)
+    const scene = slide.scene = new BABYLON.Scene(engine)
+    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 20, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 5
-    light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
+    const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
+    const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
+
     populateScene()
-    
+    scene.registerBeforeRender(tick)
     scene.onKeyboardObservable.add(onKeyEvent);
     handlePointer()
+    engine.runRenderLoop(() => scene.render())
+    window.addEventListener("resize", onResize)
+}
+
+
+function cleanup() {
+    window.removeEventListener("resize", onResize)
+    slide.engine.stopRenderLoop()    
+    slide.scene.dispose()
+    delete slide.scene
+    slide.engine.dispose()
+    delete slide.engine
+}
+
+function onResize() {
+    slide.engine.resize()
 }
 
 
 function handlePointer() {
     let clicked = false
     let oldy
-    scene.onPointerObservable.add(pointerInfo => {
+    slide.scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
             case BABYLON.PointerEventTypes.POINTERDOWN:
                 onpointerdown(pointerInfo)
@@ -53,112 +66,22 @@ function handlePointer() {
         if(pointerInfo.event.offsetX<100) {
             clicked = true
             oldy = pointerInfo.event.offsetY
-            setTimeout(() => camera.detachControl(canvas))
+            setTimeout(() => slide.camera.detachControl(slide.canvas))
         }
     }
     function onpointerup(pointerInfo) {
         clicked = false
-        camera.attachControl(canvas, true); 
+        slide.camera.attachControl(slide.canvas, true); 
     }
     function onpointerdrag(pointerInfo) {
         let y = pointerInfo.event.offsetY
         let dy = y-oldy
         oldy = y
-        model2.pivot.position.y -= dy*0.01
+        slide.model.pivot.position.y -= dy*0.01
     }
 
 }
 
-/*
-                console.log(pointerInfo)
-                const radius = 3
-                const obj = model2.pivot
-                const bv = obj.getHierarchyBoundingVectors()
-                const c = BABYLON.Vector3.Lerp(bv.min,bv.max,0.5)
-                sphere.position.copyFrom(c)
-                const rradius = (bv.max.x-bv.min.x) /2
-                sphere.scaling.set(rradius, rradius, rradius)
-                sphere.material.diffuseColor.set(100,100,100)
-
-                const bsphere = new BABYLON.BoundingSphere(bv.min, bv.max)
-                if(pointerInfo.pickInfo.ray.intersectsSphere(bsphere, 0))
-                {
-                    sphere.material.diffuseColor.set(200,0,0)
-                    setTimeout(() => camera.detachControl(canvas))
-                    console.log("CLICK")
-                    clicked = true
-                    oldy = pointerInfo.event.offsetY
-                }
-                
-
-                / *
-				if(pointerInfo.pickInfo.hit && pointerInfo.pickInfo.pickedMesh != ground) {
-                    pointerDown(pointerInfo.pickInfo.pickedMesh)
-                }
-                * /
-				break;
-			case BABYLON.PointerEventTypes.POINTERUP:
-                if(clicked) { camera.attachControl(canvas, true); clicked = false }
-                // pointerUp();
-				break;
-            case BABYLON.PointerEventTypes.POINTERMOVE:          
-                if(clicked) { 
-                    console.log("drag") 
-                    let dy = pointerInfo.event.offsetY - oldy
-                    oldy = pointerInfo.event.offsetY
-                    model2.pivot.position.y -= dy*0.1
-                }
-                // pointerMove();
-				break;
-        }
-    });
-    }
-}
-
-
-function onPointerEvent(pointerInfo) {
-
-}    
-    scene.onPointerObservable.add((pointerInfo) => {      		
-        switch (pointerInfo.type) {
-			case BABYLON.PointerEventTypes.POINTERDOWN:
-                
-})
-
-var pointerDown = function (mesh) {
-    currentMesh = mesh;
-    startingPoint = getGroundPosition();
-    if (startingPoint) { // we need to disconnect camera from canvas
-        setTimeout(function () {
-            camera.detachControl(canvas);
-        }, 0);
-    }
-}
-
-var pointerUp = function () {
-if (startingPoint) {
-    camera.attachControl(canvas, true);
-    startingPoint = null;
-    return;
-}
-}
-
-var pointerMove = function () {
-if (!startingPoint) {
-    return;
-}
-var current = getGroundPosition();
-if (!current) {
-    return;
-}
-
-var diff = current.subtract(startingPoint);
-currentMesh.position.addInPlace(diff);
-
-startingPoint = current;
-
-}
-*/
 
 
 function onKeyEvent(kbInfo) {
@@ -167,15 +90,15 @@ function onKeyEvent(kbInfo) {
             console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
             if(49<=key && key<=49+4) {
-                model2.pivot.dispose()
+                slide.model.pivot.dispose()
                 let data 
                 if(key == 49) data = PolyhedronData.p4
                 else if(key == 50) data = PolyhedronData.p6
                 else if(key == 51) data = PolyhedronData.p8
                 else if(key == 52) data = PolyhedronData.p12
                 else if(key == 53) data = PolyhedronData.p20
-                model2 = new PolyhedronModel(data)
-                model2.update()
+                slide.model = new PolyhedronModel('model',data, slide.scene)
+                slide.model.update()
             }
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
@@ -186,13 +109,15 @@ function onKeyEvent(kbInfo) {
 
 
 class PolyhedronModel extends GeometricModel {
-    constructor(data, name = 'poly') {
-        super(name)
+    constructor(name, data, scene) {
+        super(name, scene)
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
         this.y0 = 0.0
     }
+
     update() {
+
         const y0 = -this.pivot.position.y
 
         const V3 = BABYLON.Vector3
@@ -247,29 +172,23 @@ class PolyhedronModel extends GeometricModel {
 
 
 function populateScene() {
-    model2 = new PolyhedronModel(PolyhedronData.p6)
-    model2.update()
-
-    /*
-    sphere = BABYLON.MeshBuilder.CreateSphere('ss', {diameter:2}, scene)
-    sphere.material = new BABYLON.StandardMaterial('ssmat',scene)
-    sphere.material.alpha = 0.2
-    */
+    let model = slide.model = new PolyhedronModel('model', PolyhedronData.p6, slide.scene)
+    model.update()
 
     const paper = createPaper()
 
-    showWorldAxis(3)
+    showWorldAxis(3, slide.scene)
 
 }
 
 
 function tick() {
     const psi = performance.now()*0.0001
-    if(model2 != null) {
-        model2.matrix = 
-        BABYLON.Matrix.RotationX(0.3).multiply(
-            BABYLON.Matrix.RotationZ(psi))
-        model2.update()
+    if(slide.model != null) {
+        slide.model.matrix = 
+            BABYLON.Matrix.RotationX(0.3).multiply(
+                BABYLON.Matrix.RotationZ(psi))
+        slide.model.update()
     }
 
     // sphere.position.x = Math.cos(performance.now()*0.001) * 2
@@ -277,6 +196,7 @@ function tick() {
 
 
 function createPaper() {
+    const scene = slide.scene
     const w = 10, h = 8
     const t = 0.1
 

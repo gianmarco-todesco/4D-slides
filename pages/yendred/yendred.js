@@ -31,7 +31,7 @@ function cleanup() {
     slide.scene.dispose
     delete slide.scene
     slide.engine.dispose
-    delete engine.scene
+    delete slide.engine
 }
 
 function tick() {

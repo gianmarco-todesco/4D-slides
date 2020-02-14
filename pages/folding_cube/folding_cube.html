@@ -4,27 +4,28 @@
 <!-- Header ------------------------------>
 <head>
 <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
-<title>Folding tesseract</title>
+<title>Folding cube</title>
 <script src="https://cdn.babylonjs.com/babylon.js"></script>
 <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
-<script src="folding_tesseract.js"></script>        
+<!--script src="gui.js" ></script-->
+<script src="../../libs/common.js"></script>        
+<script src="../../libs/gutil.js"></script>        
+<script src="folding_cube.js" ></script>
 <style>
 body, html { margin:0; padding:0; overflow: hidden; width:100%; height:100%; }
-#foldingTesseractCanvas { width:100%; height:100%; }
+#foldingCubeCanvas { width:100%; height:100%; }
 </style>    
 </head>
 <body>
 
-<canvas id="foldingTesseractCanvas"></canvas>
+<canvas id="foldingCubeCanvas"></canvas>
 
 <script> 
-let scene = createFoldingTesseractAnimation();
+let scene = createFoldingCubeAnimation();
 </script>
 
-<img id="face-img" src="hc_face.png" onload="onImgLoaded(this)" style="display: none;">
 
 </body>
 </html>
-
 
 

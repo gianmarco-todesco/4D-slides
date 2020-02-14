@@ -1,0 +1,43 @@
+"use strict";
+
+const slide = {
+    name:"Kepler-Poinsot"
+}
+
+
+
+function setup() {
+    const canvas = slide.canvas = document.getElementById("renderCanvas")
+    const engine = slide.engine = new BABYLON.Engine(canvas, true)
+    const scene = slide.scene = new BABYLON.Scene(engine)
+
+    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
+        Math.PI / 2, Math.PI / 2, 10, 
+        new BABYLON.Vector3(0,0,0), scene)
+    camera.attachControl(canvas, true)
+    camera.wheelPrecision=20
+    camera.lowerRadiusLimit = 5
+    
+    const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
+    const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
+    light2.parent = camera
+
+    populateScene()
+    
+    scene.registerBeforeRender(tick)
+    engine.runRenderLoop(() => scene.render())
+    window.addEventListener("resize", onResize)
+}
+
+function cleanup() {
+    window.removeEventListener("resize", onResize)
+    slide.engine.stopRenderLoop()
+    slide.scene.dispose
+    delete slide.scene
+    slide.engine.dispose
+    delete slide.engine    
+}
+
+function onResize() {
+    slide.engine.resize()
+}
