@@ -1,0 +1,16 @@
+.reveal .quote {
+    text-align: justify;
+    padding:20px;
+}
+
+.reveal .reference {
+    text-align: right;
+    font-size:smaller;
+    font-style: italic;
+}
+
+.reveal .slides > section,
+.reveal .slides > section > section {
+    padding:0 0 20px 0;
+
+}

@@ -1,33 +1,30 @@
-let canvas,engine,scene
-let camera
-let light1, light2
-let sg 
-let renderTarget
+const slide = {
+    name: 'sequence',
+    targetDim: 0, 
+    currentDim: 0,
+    currentDimSpeed: 0.001
+}
 
-let targetDim=0, currentDim=0
-let oldTime = performance.now()
-let currentDimSpeed = 0.001
 
-let model
 
-function initialize() {
-    canvas = document.getElementById("renderCanvas")
-    engine = new BABYLON.Engine(canvas, true)
-    scene = new BABYLON.Scene(engine)
-    camera = new BABYLON.ArcRotateCamera("Camera", 
+function setup() {
+    const canvas = slide.canvas = document.getElementById("renderCanvas")
+    const engine = slide.engine = new BABYLON.Engine(canvas, true)
+    const scene = slide.scene = new BABYLON.Scene(engine)
+
+    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 10, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     
-
     scene.ambientColor.set(0.5,0.5,0.5)
 
-    renderTarget = createRenderTarget()
+    //renderTarget = createRenderTarget()
     
     // light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene)
-    light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, 0), scene)    
-    light1 = new BABYLON.PointLight("light1", new BABYLON.Vector3(0, 0, 0), scene)    
-    light1.parent = camera
+    slide.light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 10, 0), scene)    
+    slide.light1 = new BABYLON.PointLight("light1", new BABYLON.Vector3(0, 0, 0), scene)    
+    slide.light1.parent = camera
 
     // shadow
     //let shadowGenerator = sg = new BABYLON.ShadowGenerator(512, light2);
@@ -48,28 +45,33 @@ function initialize() {
 
     plane.position.x = 3
 */
-
     // model
-    model = new Model(scene)
+    slide.model = new Model(scene)    
+    slide.model.updatePositions(slide.currentDim)
 
+    slide.oldTime = performance.now()
 
-    
-    scene.registerBeforeRender(tick)
-    
-    window.addEventListener("resize", () => engine.resize())
-    
+    scene.registerBeforeRender(tick)    
+    window.addEventListener("resize", () => engine.resize())    
     scene.onKeyboardObservable.add(onKeyEvent);
+
+    engine.runRenderLoop(() => scene.render())   
 }
 
-function start() {
-    engine.runRenderLoop(() => scene.render())    
-}
 
-function stop() {
-    engine.stopRenderLoop()    
+
+
+function cleanup() {
+    slide.engine.stopRenderLoop()    
+    slide.scene.dispose()
+    delete slide.scene
+    slide.engine.dispose()
+    delete slide.engine
+
 }
 
 function createGround() {
+    const scene = slide.scene
     let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
     groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
     groundMat.ambientColor = new BABYLON.Color3(0.5, 0.5, 0.5); 
@@ -80,7 +82,7 @@ function createGround() {
     ground.position.y = -3
     ground.material = groundMat;
     //ground.receiveShadows = true;
-    groundMat.diffuseTexture = renderTarget
+    // groundMat.diffuseTexture = renderTarget
 }
 
 function createRenderTarget() {
@@ -151,7 +153,7 @@ class Model {
             }
         }
         
-        renderTarget.renderList = rl
+        // renderTarget.renderList = rl
 
         this.updatePositions(4.99)
     }
@@ -225,20 +227,20 @@ class Model {
 function tick() {
     
     let time = performance.now()
-    let deltaTime = time - oldTime
-    oldTime = time
+    let deltaTime = time - slide.oldTime
+    slide.oldTime = time
 
+    let { targetDim, currentDim, currentDimSpeed } = slide
     let oldDim = currentDim
     if(currentDim < targetDim) {
-        currentDim += currentDimSpeed * deltaTime
-        if(currentDim >= targetDim) currentDim = targetDim
+        currentDim = Math.min(targetDim, currentDim + currentDimSpeed * deltaTime)
     } else if(currentDim > targetDim) {
-        currentDim -= currentDimSpeed * deltaTime
-        if(currentDim <= targetDim) currentDim = targetDim
+        currentDim = Math.max(targetDim, currentDim - currentDimSpeed * deltaTime)
     }
-
-    if(oldDim != currentDim)
-        model.updatePositions(currentDim)
+    if(oldDim != currentDim) {
+        slide.currentDim = currentDim
+        slide.model.updatePositions(currentDim)
+    }
 }
 
 function onKeyEvent(kbInfo) {
@@ -246,7 +248,7 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             const key = kbInfo.event.keyCode
             if(49<=key && key<=49+4) {
-                targetDim = Math.min(4.999, key-48)
+                slide.targetDim = Math.min(4.999, key-48)
                 
             }
             break;

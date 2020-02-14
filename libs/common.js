@@ -1,20 +1,18 @@
 "use strict";
     
-if(location.search.indexOf('slide')>=0) {
+if(window.self !== window.top) {
     let status = 0
     addEventListener('message', msg => {
         if(msg.data == 'slide:start') {
                 console.log("=========================")
-                console.log("start")
+                console.log("start:", "'"+slide.name+"'")
                 console.log("=========================")
-                if(status==0) { initialize(); status = 1;}
-                start()
-
+                setup()
         } else if(msg.data == 'slide:stop') {
             console.log("=========================")
-            console.log("stop")
+            console.log("stop:", "'"+slide.name+"'")
             console.log("=========================")
-            stop()
+            cleanup()
 
         } else {
             console.log("=========================")
@@ -23,10 +21,14 @@ if(location.search.indexOf('slide')>=0) {
         }
     })
 
-    addEventListener("DOMContentLoaded", e=> {
-        console.log("=========================")
-        console.log("DOMContentLoaded")
-        console.log("=========================")
+    window.onload = () => {
+        console.log(window.slide)
+
+    }
+    addEventListener("load", e=> {
+        console.log(window.slide)
+        const name = window.slide ? window.slide.name : "no-name"
+        console.log(name, " loaded (slideshow)")
     })
 
 
