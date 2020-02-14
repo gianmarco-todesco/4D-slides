@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <title>Test</title>
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+        <script src="https://cdn.babylonjs.com/babylon.js"></script>
+        <script src="https://code.jquery.com/pep/0.4.3/pep.js"></script>
+        <!-- script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.min.js"></script-->
+        <!-- script src="babylon.max.js"></script -->
+        <script src="../../libs/common.js"></script>
+        <script src="../../libs/gutil.js"></script>
+        <script src="spherical-parallels.js"></script>
+
+    </head>
+    <body>
+        <!-- script type="application/vertexShader" id="vertexShaderCode">
+            precision highp float;
+
+            // Attributes
+            attribute vec3 position;
+            attribute vec2 uv;
+        
+            // Uniforms
+            uniform mat4 worldViewProjection;
+        
+            // Normal
+            varying vec2 vUV;
+        
+            void main(void) {
+                gl_Position = worldViewProjection * vec4(position, 1.0);
+                vUV = uv;
+            }
+        
+        </!-- script>        
+        <script type="application/fragmentShader" id="fragmentShaderCode">
+            precision highp float;
+            varying vec2 vUV;
+        
+            // uniform sampler2D textureSampler;
+        
+            void main(void) {
+                gl_FragColor = vec4(vUV,0.0,1.0); // texture2D(textureSampler, vUV);
+            }
+        </script -->        
+
+        <canvas id="renderCanvas" touch-action="none"></canvas> //touch-action="none" for best results from PEP
+    </body>
+</html>
