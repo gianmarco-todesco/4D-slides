@@ -20,6 +20,21 @@ class PolyhedronData {
             })
         })        
     }
+
+    getFaceMatrix(faceIndex, scaleFactor) {
+        scaleFactor = scaleFactor || 1.0
+        const vertices = this.vertices
+        const pts = this.faces[faceIndex].map(i=>vertices[i])
+        const fc = pts.reduce((a,b)=>a.add(b)).scale(1.0/pts.length)
+        const e0 = pts[0].subtract(fc).normalize()
+        let e1 = fc.subtract(e0.scale(BABYLON.Vector3.Dot(e0,fc))).normalize()
+        let e2 = BABYLON.Vector3.Cross(e0,e1)
+        return BABYLON.Matrix.FromValues(
+            e0.x,e0.y,e0.z,0,
+            e1.x,e1.y,e1.z,0,
+            e2.x,e2.y,e2.z,0,
+            fc.x*scaleFactor,fc.y*scaleFactor,fc.z*scaleFactor,1)
+    }
 }
 
 PolyhedronData.p4 = (() => {

@@ -182,3 +182,79 @@ function HSVtoRGB(h, s, v) {
     }
     return [r,g,b,1.0];
 }
+
+class VertexDataBuilder {
+    constructor() {
+        this.vertexData = null
+    }
+
+    addXZPolygon(pts, y) {
+        const positions = []
+        const normals = []
+        const indices = []
+        const uvs = []
+        let ny = y>=0 ? 1 : -1
+        positions.push(0,y,0)
+        normals.push(0,ny,0)
+        uvs.push(0,0)
+        pts.forEach(({x,z}) => {
+            positions.push(x,y,z)
+            normals.push(0,ny,0)
+            uvs.push(0,0)
+        })
+        if(y>=0) {
+            for(let i=0; i<pts.length; i++) indices.push(0, 1+i, 1+((i+1)%pts.length))        
+        } else {
+            for(let i=0; i<pts.length; i++) indices.push(0, 1+((i+1)%pts.length), 1+i)
+        }
+        const vd = new BABYLON.VertexData()
+        vd.positions = positions
+        vd.normals = normals
+        vd.indices = indices
+        vd.uvs = uvs
+        this.merge(vd)        
+    }
+    merge(vd) {
+        if(this.vertexData) this.vertexData.merge(vd)
+        else this.vertexData = vd
+    }
+    addSphere(c,r) {
+        const vd = BABYLON.VertexData.CreateIcoSphere({
+            radius:r, 
+            flat:false,
+            subdivisions:4
+         })
+        vd.transform(BABYLON.Matrix.Translation(c.x,c.y,c.z))
+        this.merge(vd)
+    }
+    addCylinder(pa,pb,r) {
+        const dist = BABYLON.Vector3.Distance(pa,pb)
+        const vd = BABYLON.VertexData.CreateCylinder({
+            height:dist, 
+            diameter:r*2,
+            tessellation:16,
+        })
+        const delta = pb.subtract(pa)
+        const rxz2 = delta.x*delta.x + delta.z*delta.z
+        const matrix = new BABYLON.Matrix()
+        matrix.setRowFromFloats(3, 
+            (pa.x+pb.x)*0.5, 
+            (pa.y+pb.y)*0.5, 
+            (pa.z+pb.z)*0.5, 1)
+
+        if(rxz2<1.0e-8)  { 
+            matrix[0] = matrix[5] = matrix[10] = 1
+        } else {
+            const up = new BABYLON.Vector3(0,1,0)
+            const e1 = delta.scale(1/dist)
+            const e0 = BABYLON.Vector3.Cross(e1, up).normalize()
+            const e2 = BABYLON.Vector3.Cross(e0,e1).normalize()
+            matrix.setRowFromFloats(0, e0.x,e0.y,e0.z, 0)
+            matrix.setRowFromFloats(1, e1.x,e1.y,e1.z, 0)
+            matrix.setRowFromFloats(2, e2.x,e2.y,e2.z, 0)
+        }
+        vd.transform(matrix)
+        this.merge(vd)
+    }
+    
+}
