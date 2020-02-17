@@ -43,14 +43,14 @@ function onResize() {
 
 function populateScene() {
     const scene = slide.scene
-    slide.model = new PolychoronSectionModel('model',PolychoronData.p120, scene)
+    slide.model = new PolychoronSectionModel('model',PolychoronData.gax, scene)
 }
 
 let stop = false
 
 function tick() {
     if(stop==false) {
-        slide.model.w0 = Math.sin(performance.now()*0.0001)
+        slide.model.w0 = 4*Math.sin(performance.now()*0.0001)
         slide.model.update()    
     }    
 }
@@ -133,7 +133,7 @@ class PolychoronSectionModel extends GeometricModel {
         const mat = this.matrix
         
         const Transform = BABYLON.Vector4.Transform
-        const pts4 = this.data.vertices.map(p=>Transform(mat,p))
+        const pts4 = this.data.vertices.map(p=>Transform(mat,p).scale(5))
         let w0 = this.adjustw(this.w0, pts4)
         
         // compute edge points : intersections along edges. edgePoints = [(a,b,p),...]
@@ -148,7 +148,8 @@ class PolychoronSectionModel extends GeometricModel {
         const tb = {}
         const m = pts4.length
         edgePoints.forEach(([a,b,p])=> { 
-            const j = me.addVertex(p,0.05)
+            // const j = me.addVertex(p,0.003)
+            const j = pts.length
             tb[a*m+b] = tb[b*m+a] = j
             pts.push(p)
         })
@@ -166,7 +167,7 @@ class PolychoronSectionModel extends GeometricModel {
                 a = b
             })
             if(js.length >= 2) {
-                me.addEdge(pts[js[0]], pts[js[1]], 0.03)
+                // me.addEdge(pts[js[0]], pts[js[1]], 0.003)
                 faceTable[faceIndex] = [js[0], js[1]]
             }
         })
