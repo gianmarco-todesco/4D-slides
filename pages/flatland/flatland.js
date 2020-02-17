@@ -103,6 +103,14 @@ class BookAndSphereModel {
     constructor() {
         const scene = slide.scene
 
+        var glowLayer = this.glowLayer = new BABYLON.GlowLayer("glow", scene, { 
+            mainTextureFixedSize: 256,
+            blurKernelSize: 64
+        });
+        glowLayer.intensity = 2.0
+
+
+
         const bookCoverAr = 841/1024
         const bookCoverHeight = 16
 
@@ -129,10 +137,45 @@ class BookAndSphereModel {
         material.emissiveColor = new BABYLON.Color3(0.05, 0.05, 0.05);
         material.alpha = 0.4;
 
-        const ringMesh = this.ringMesh = BABYLON.MeshBuilder.CreateTorus('ring', {updatable:true}, scene)
-        ringMesh.material = new BABYLON.StandardMaterial('ring-mat', scene)
+        const ringMesh = this.ringMesh = new BABYLON.Mesh('ring', scene)
+        const ringMaterial = ringMesh.material = new BABYLON.StandardMaterial('ring-mat', scene)
+        ringMaterial.emissiveColor.set(1,0.5,1)
+        ringMaterial.diffuseColor.set(0,0,0)
+        ringMaterial.specularColor.set(0,0,0)
+        ringMaterial.ambientColor.set(0,0,0)
+        // ringMaterial.alpha = 0.5
+        
+        const vd = new BABYLON.VertexData()
+        const positions = []
+        const normals = []
+        const indices = []
+        let r1 = 1.5/2, r2 = 0.01
+        let n = 50, m = 30
+        for(let i = 0; i<n; i++) {
+            let phi = Math.PI*2*i/(n-1)
+            let csPhi = Math.cos(phi), snPhi = Math.sin(phi)
+            for(let j=0; j<m; j++) {
+                let theta = Math.PI*2*j/(m-1)
+                let csTheta = Math.cos(theta), snTheta = Math.sin(theta)
+                let nrmx = csPhi * snTheta
+                let nrmy = csTheta
+                let nrmz = snPhi * snTheta
+                normals.push(nrmx, nrmy, nrmz)
+                positions.push(csPhi*r1 + r2*nrmx, r2*nrmy, snPhi*r1 + r2*nrmz)
+            }
+        }
+        for(let i=0; i+1<n; i++) {
+            for(let j=0; j+1<m; j++) {
+                let k = i*m+j
+                indices.push(k,k+1,k+1+m, k, k+1+m,k+m)
+            }
+        }
+        vd.positions = positions
+        vd.normals = normals
+        vd.indices = indices
+        vd.applyToMesh(ringMesh, true) // updatable
 
-
+        ringMesh.position.copyFrom(sphere.position)
     }
 
     updateRingMesh() {
@@ -144,14 +187,6 @@ class BookAndSphereModel {
         var colors = mesh.getVerticesData(BABYLON.VertexBuffer.ColorKind);
         var uvs = mesh.getVerticesData(BABYLON.VertexBuffer.UVKind);
         let n = uvs.length/2
-        for(let i=0; i<n; i++) {
-            const u = uvs[i*2], v = uvs[i*2+1]
-            const phi = u*Math.PI*2
-            const csPhi = Math.cos(phi)
-            const theta = v*Math.PI*2
-            const y = Math.sin(theta)
-            const r = Math.cos(theta) + 
-        }
         
     }
 
