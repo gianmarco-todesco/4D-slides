@@ -55,38 +55,53 @@ function tick() {
 
 
 function handlePointer() {
-    let clicked = false
-    let oldy
+    let status = 0
+    let oldy, oldx
     slide.scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
             case BABYLON.PointerEventTypes.POINTERDOWN:
                 onpointerdown(pointerInfo)
                 break
             case BABYLON.PointerEventTypes.POINTERUP:
-                if(clicked) onpointerup(pointerInfo)
+                if(status) onpointerup(pointerInfo)
                 break
             case BABYLON.PointerEventTypes.POINTERMOVE:
-                if(clicked) onpointerdrag(pointerInfo)
+                if(status) onpointerdrag(pointerInfo)
                 break
         }
     });
     function onpointerdown(pointerInfo) {
-        console.log(pointerInfo)
-        if(pointerInfo.event.offsetX<100) {
-            clicked = true
+        if(pointerInfo.pickInfo.pickedMesh == slide.model.sphere) {
+            status = 2
+        } else if(pointerInfo.event.offsetX<100) {
+            status = 1
+        } else {
+            status = 0
+            console.log(pointerInfo)
+        }
+        if(status) {
+            oldx = pointerInfo.event.offsetX
             oldy = pointerInfo.event.offsetY
             setTimeout(() => slide.camera.detachControl(slide.canvas))
         }
     }
     function onpointerup(pointerInfo) {
-        clicked = false
+        status = 0
         slide.camera.attachControl(slide.canvas, true); 
     }
     function onpointerdrag(pointerInfo) {
-        let y = pointerInfo.event.offsetY
-        let dy = y-oldy
+        let x = pointerInfo.event.offsetX, y = pointerInfo.event.offsetY
+        let dx = x-oldx
+        let dy = -(y-oldy)
+        oldx = x
         oldy = y
-        changeParameter(dy * 0.01)
+        if(status == 1) {
+            if(slide.step.changeParameter)
+                slide.step.changeParameter(dy * 0.01)
+        }            
+        else if(status == 2) {
+            slide.model.sphere.rotation.x += dx * 0.01
+        }
     }
 
 }
@@ -98,8 +113,8 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
-            if(49<=key && key<=49+4) {
-            }
+            if(key == 65) slide.prev()
+            else if(key == 68) slide.next()
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
             console.log("KEY UP: ", kbInfo.event.keyCode);
@@ -115,76 +130,76 @@ function changeParameter(d) {
 
 function populateScene() {
     const scene = slide.scene
-
-    showWorldAxis(5,scene)
-
-    
+    showWorldAxis(5,scene)    
     slide.model = new SphereModel(scene)
-
-    
-    
-    /*
-    mat.backFaceCulling = false
-    // mat.needDepthPrePass = true;
-    mat.specularColor.set(0.7,0.7,0.7)
-    // mat.alpha = 0.5
-
-    let texture = mat.opacityTexture = new BABYLON.DynamicTexture('sphere-texture', {width:1024, height:1024}, scene)
-    texture.hasAlpha = true
-    var ctx = texture.getContext();
-    ctx.clearRect(0,0,1024,1024)
-    ctx.fillStyle = 'rgb(255,255,255,0.3)'
-    ctx.fillRect(0,0,1024,1024)
-    ctx.fillStyle = 'cyan'
-    for(let i=64; i<1024; i+=64)
-        ctx.fillRect(0,i-3,1024,7)
-    texture.update()
-    */
-
-    /*
-    let positions = []
-    let indices = []
-
-    let m = 10
-    let n = 100
-    let radius = 2.51
-    let vCount = 0
-    for(let k = 1; k<m; k++) {
-        for(let i=0; i<n; i++) {
-            let phi = Math.PI*2*i/(n-1)
-            let theta = Math.PI*k/m - 0.01
-            let r = Math.sin(theta) * radius
-            positions.push(Math.cos(phi)*r, Math.cos(theta)*radius, Math.sin(phi)*r)
-            theta += 0.02
-            r = Math.sin(theta) * radius
-            positions.push(Math.cos(phi)*r, Math.cos(theta)*radius, Math.sin(phi)*r)
-            let v = vCount
-            vCount += 2
-            if(i+1<n) { indices.push(v,v+1,v+3, v, v+3, v+2) }
-        }
-    }
-    let vertexData = new BABYLON.VertexData();
-    vertexData.positions = positions
-    vertexData.indices = indices
-    vertexData.normals = []
-    BABYLON.VertexData.ComputeNormals(positions, indices, vertexData.normals);
-    vertexData.applyToMesh(mesh);
-    // showWorldAxis(10)
-    mesh.parent = sphere
-    
-    
-
-    let rtt = slide.rtt = createRenderTarget()
-    rtt.renderList.push(mesh)
-
-
-    paper.material.diffuseTexture = rtt
-    */
-
 }
 
 
 
+
+// ============================================================================
+
+slide.steps = [
+{
+    init() {
+        const md = slide.model
+        md.sphereShell.hide()
+        md.floor.hide()
+        md.polygonsManager.showNothing()
+    }
+},{
+    init() {
+        const md = slide.model
+        md.sphereShell.addParallels(10,0.05)
+        md.sphereShell.show()        
+    }, 
+    cleanup() {
+        const md = slide.model
+        md.sphereShell.hide()        
+    }
+}, {
+    init() {
+        const md = slide.model
+        md.sphereShell.addParallels(10,0.05)
+        md.sphereShell.show()        
+        md.floor.show()
+    },
+    cleanup() {
+        const md = slide.model
+        md.sphereShell.hide()        
+        md.floor.hide()
+    }
+}, {
+    init() {
+        const md = slide.model
+        md.polygonsManager.showOnePolygon()
+    },
+    cleanup() {
+        const md = slide.model
+        md.polygonsManager.showNothing()
+    },
+    changeParameter(d) {
+        const pm = slide.model.polygonsManager
+        let size = Math.max(0.1, Math.min(1.8, pm.size + d))
+        pm.setSize(size)
+    }
+}]
+
+slide.stepIndex = 0
+slide.step = slide.steps[0]
+
+
+slide.setStep = function(i) {
+    i = Math.max(0, Math.min(slide.steps.length-1, i))
+    if(i == slide.stepIndex) return
+    if(slide.step.cleanup) slide.step.cleanup()
+    slide.stepIndex = i
+    slide.step = slide.steps[i]
+    if(slide.step.init) slide.step.init()
+}
+
+slide.next = function() { slide.setStep(slide.stepIndex+1) }
+slide.prev = function() { slide.setStep(slide.stepIndex-1) }
 
 
 
@@ -193,50 +208,18 @@ class SphereModel {
         this.scene = scene
         this.paper = this.createPaper(scene)
         this.sphere = this.createSphere(scene)
-        this.rtt = this.createRenderTarget(scene)
-        this.paper.material.diffuseTexture = this.rtt
+
+        this.floor = new FloorWithShadow(scene)
         
         this.sphereShell = new SphereShell(2.51, scene)
         this.sphereShell.mesh.parent = this.sphere
 
-        this.rtt.renderList.push(this.sphereShell.mesh)
-        /*
-        this.addParallel(0.3,0.02, new BABYLON.Color3(0,1,0))
-        this.updateSphereShell()
-        */
+        this.floor.rtt.renderList.push(this.sphereShell.mesh)
+        this.floor.hide()
 
-        const theta = 0.7
-
-        const radius = 2.5
-        const v1 = new BABYLON.Vector3(0,radius,0)
-        const v2 = new BABYLON.Vector3(Math.sin(theta)*radius,Math.cos(theta)*radius,0)
-
-        this.polygon = new SphericalPolygon(v1,v2,4)
-
-        
-        const angle = this.polygon.getVertexAngle()
-
-        const v3 = new BABYLON.Vector3()
-        v1.rotateByQuaternionToRef( BABYLON.Quaternion.RotationAxis(v2, angle), v3 )
-        v3.normalize().scaleInPlace(radius)
-        this.secondPolygon = new SphericalPolygon(v3,v2,4)
-
-        const v4 = new BABYLON.Vector3()
-        v3.rotateByQuaternionToRef( BABYLON.Quaternion.RotationAxis(v2, angle), v4 )
-        v4.normalize().scaleInPlace(radius)
-        this.secondPolygon = new SphericalPolygon(v4,v2,4)
-
-        /*
-    
-        const theta = 1.2
-        let polygon = new SpherePolygon(
-            new BABYLON.Vector3(0,2.5,0), 
-            new BABYLON.Vector3(Math.sin(theta)*2.5,Math.cos(theta)*2.5,0),
-            3)
-
-        new SphereSegment(polygon.pts[0], polygon.pts[1], 0.1)
-        */
+        this.polygonsManager = new PolygonsManager()       
     }
+
 
     foo(theta) {
         this.polygon.setParameters(
@@ -245,17 +228,7 @@ class SphereModel {
     }
 
     createPaper(scene) {
-        const paper = BABYLON.MeshBuilder.CreateGround('paper', {
-            width: 20,
-            height: 20,
-        }, scene)
-        paper.position.y = -2.511
-    
-        let mat = paper.material = new BABYLON.StandardMaterial('paper-mat', scene)
-        mat.backFaceCulling = false
-        mat.diffuseColor.set(0.3,0.3,0.3)
-        mat.specularColor.set(0,0,0)     
-        return paper   
+        
     }
 
     createSphere(scene) {
@@ -275,8 +248,68 @@ class SphereModel {
     }
 
 
-    createRenderTarget(scene) {
-        let rtt = new BABYLON.RenderTargetTexture("rt", 2048, scene)
+    
+
+    /*
+    createSphereShell(scene) {
+        let mesh = new BABYLON.Mesh('prova', scene)
+        mesh.parent = this.sphere
+        mesh.radius = 2.51
+    
+        let pMat = mesh.material = new BABYLON.StandardMaterial('pmat', scene)
+        pMat.backFaceCulling = false
+        pMat.diffuseColor.set(0.2,0.6,0.7)
+        pMat.twoSidedLighting = true
+
+        mesh.vertexData = new BABYLON.VertexData()
+        mesh.positions = []
+        mesh.indices = []
+        mesh.colors = []
+        return mesh
+    }
+    */
+
+    
+
+    
+}
+
+//-----------------------------------------------------------------------------
+
+class FloorWithShadow {
+    constructor(scene) {
+        this.paper = this._createPaper(scene)
+        this.rtt = this._createRenderTarget(scene)
+        this.paper.material.diffuseTexture = this.rtt
+        
+        this.sphereShell = new SphereShell(2.51, scene)
+
+    }
+
+    show() {
+        this.paper.isVisible = true
+    }
+    hide() {
+        this.paper.isVisible = false
+
+    }
+    _createPaper(scene) {
+
+        const paper = this.paper = BABYLON.MeshBuilder.CreateGround('paper', {
+            width: 20,
+            height: 20,
+        }, scene)
+        paper.position.y = -2.511
+    
+        let mat = paper.material = new BABYLON.StandardMaterial('paper-mat', scene)
+        mat.backFaceCulling = false
+        mat.diffuseColor.set(0.3,0.3,0.3)
+        mat.specularColor.set(0,0,0)     
+        return paper   
+    }
+
+    _createRenderTarget(scene) {
+        let rtt = new BABYLON.RenderTargetTexture("rt", 2048, scene, false, false)
         scene.customRenderTargets.push(rtt);
     
         let rttCamera = new BABYLON.FreeCamera('rttCamera', new BABYLON.Vector3(0,2.5,0), scene)
@@ -314,27 +347,6 @@ class SphereModel {
     
         return rtt
     }
-
-    createSphereShell(scene) {
-        let mesh = new BABYLON.Mesh('prova', scene)
-        mesh.parent = this.sphere
-        mesh.radius = 2.51
-    
-        let pMat = mesh.material = new BABYLON.StandardMaterial('pmat', scene)
-        pMat.backFaceCulling = false
-        pMat.diffuseColor.set(0.2,0.6,0.7)
-        pMat.twoSidedLighting = true
-
-        mesh.vertexData = new BABYLON.VertexData()
-        mesh.positions = []
-        mesh.indices = []
-        mesh.colors = []
-        return mesh
-    }
-
-    
-
-    
 }
 
 //-----------------------------------------------------------------------------
@@ -354,6 +366,13 @@ class SphereShell {
         this.positions = []
         this.indices = []
         this.colors = []
+    }
+
+    show() {
+        this.mesh.isVisible = true
+    }
+    hide() {
+        this.mesh.isVisible = false
     }
 
     addPointsPair(i,x1,y1,z1, x2,y2,z2) {
@@ -478,7 +497,7 @@ class SphericalPolygon {
     }
 
 
-    _computePointsAndNormals(positions, normals) {
+    _computePositionsAndNormals(positions, normals) {
         const n = this.n
         const m = this.m
         const center = this.center
@@ -514,7 +533,7 @@ class SphericalPolygon {
     _updateFaceMesh() {
         const positions = this.mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
         const normals = this.mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind);
-        this._computePointsAndNormals(positions, normals) 
+        this._computePositionsAndNormals(positions, normals) 
         this.mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
         this.mesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normals);
     }
@@ -573,7 +592,7 @@ class SphericalPolygon {
         let vCount = vInfos.length
         let positions = new Float32Array(3*vCount)
         let normals = new Float32Array(3*vCount)
-        this._computePointsAndNormals(positions, normals) 
+        this._computePositionsAndNormals(positions, normals) 
         
         let vertexData = new BABYLON.VertexData();
         vertexData.positions = positions
@@ -581,14 +600,13 @@ class SphericalPolygon {
         vertexData.indices = indices
 
         vertexData.applyToMesh(mesh, true)
-        console.log(mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind));
         return mesh
     }
 }
 
 //-----------------------------------------------------------------------------
 
-class SphereSegment {
+class SphericalSegment {
     constructor(p0,p1,thickness) {
         const scene = slide.scene
         
@@ -596,14 +614,20 @@ class SphereSegment {
         this.p1 = p1
         this.thickness = thickness
         this.radius = (p0.length() + p1.length())*0.5
-        this.mesh = this.createMesh(scene)
+        this.mesh = this._createMesh(scene)
         const mat = this.mesh.material = new BABYLON.StandardMaterial('segment-mat', scene)
         mat.diffuseColor.set(0.2,0.5,0.7)
         mat.backFaceCulling = false
     }
 
-    createMesh(scene) {
-        let n = 20, m = 7 
+    setParameters(p0,p1) {
+        this.p0 = p0
+        this.p1 = p1
+        this._updateMesh()
+    }
+
+    _createMesh(scene) {
+        let n = this.n = 20, m = this.m = 7 
         const r1 = this.radius
         const r2 = this.thickness     
         let mesh = new BABYLON.Mesh(name, scene);
@@ -624,16 +648,24 @@ class SphereSegment {
         }
 
         // compute positions and normals
+        this._computePositionsAndNormals(vd.positions, vd.normals)        
+        vd.applyToMesh(mesh, true)
+        return mesh
+    }
+
+    _computePositionsAndNormals(positions, normals) {
+        const n = this.n, m = this.m
+        const r1 = this.radius
+        const r2 = this.thickness     
         
         const e0 = this.p0.clone().normalize()
-
         let e1 = this.p1.clone().normalize()
         const dot = BABYLON.Vector3.Dot(e0, e1)
         const thetaMax = Math.acos(dot)
         e1 = e1.subtract(e0.scale(dot)).normalize()
         const e2 = BABYLON.Vector3.Cross(e0,e1).normalize()
 
-        s = 0
+        let s = 0
         for(let j=0; j<m; j++) {
             let phi = -Math.PI*2*j/(m-1)
             let csPhi = Math.cos(phi)
@@ -646,20 +678,102 @@ class SphereSegment {
                 let ea = e0.scale(csTheta).add(e1.scale(snTheta))
 
                 let norm = ea.scale(csPhi).add(e2.scale(snPhi))
-                vd.normals[s] = norm.x
-                vd.normals[s+1] = norm.y
-                vd.normals[s+2] = norm.z
+                normals[s] = norm.x
+                normals[s+1] = norm.y
+                normals[s+2] = norm.z
                 let pos = ea.scale(r1).add(norm.scale(r2))
-                vd.positions[s] = pos.x
-                vd.positions[s+1] = pos.y
-                vd.positions[s+2] = pos.z
+                positions[s] = pos.x
+                positions[s+1] = pos.y
+                positions[s+2] = pos.z
                 s += 3
             }                
         }
-        vd.applyToMesh(mesh)
-        return mesh
+    }
+
+    _updateMesh() {
+        const positions = this.mesh.getVerticesData(BABYLON.VertexBuffer.PositionKind);
+        const normals = this.mesh.getVerticesData(BABYLON.VertexBuffer.NormalKind);
+        this._computePositionsAndNormals(positions, normals) 
+        this.mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, positions);
+        this.mesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, normals);
     }
 
 }
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+
+
+class PolygonsManager {
+    constructor() {
+        this.usedPolygonCount = 0
+        this.polygons = []
+        this.segments = []
+
+    }
+
+    _addPolygon(p0, p1) {
+        if(this.usedPolygonCount<this.polygons){}
+    }
+
+    showNothing() { }
+    showOnePolygon() {
+
+        const theta = this.size = 0.7
+
+        const radius = this.radius = 2.5
+        const v1 = new BABYLON.Vector3(0,radius,0)
+        const v2 = new BABYLON.Vector3(Math.sin(theta)*radius,Math.cos(theta)*radius,0)
+
+        this.polygon = new SphericalPolygon(v1,v2,4)
+        this.segments = []
+        for(let i=0; i<4; i++) {
+            const segment = new SphericalSegment(
+                this.polygon.pts[i], 
+                this.polygon.pts[(i+1)%4], 
+                0.05)
+            this.segments.push(segment)
+        }
+
+        /*
+        const angle = this.polygon.getVertexAngle()
+
+        const v3 = new BABYLON.Vector3()
+        v1.rotateByQuaternionToRef( BABYLON.Quaternion.RotationAxis(v2, angle), v3 )
+        v3.normalize().scaleInPlace(radius)
+        this.secondPolygon = new SphericalPolygon(v3,v2,4)
+
+        const v4 = new BABYLON.Vector3()
+        v3.rotateByQuaternionToRef( BABYLON.Quaternion.RotationAxis(v2, angle), v4 )
+        v4.normalize().scaleInPlace(radius)
+        this.secondPolygon = new SphericalPolygon(v4,v2,4)
+        */
+
+    }
+
+    setSize(size) {
+        const theta = this.size = size
+        const radius = this.radius
+        const v1 = new BABYLON.Vector3(0,radius,0)
+        const v2 = new BABYLON.Vector3(Math.sin(theta)*radius,Math.cos(theta)*radius,0)
+
+        this.polygon.setParameters(v1,v2)
+        for(let i=0; i<4; i++) {
+            const segment = this.segments[i]
+            segment.setParameters(
+                this.polygon.pts[i], 
+                this.polygon.pts[(i+1)%4])
+        }
+    }
+
+    setPolygonCount(n) {
+        if(n<1) n=1; else if(n>4) n = 4
+        if()
+    }
+
+}
+
 
 //-----------------------------------------------------------------------------
