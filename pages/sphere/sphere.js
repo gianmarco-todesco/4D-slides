@@ -770,7 +770,7 @@ class PolygonsManager {
 
     setPolygonCount(n) {
         if(n<1) n=1; else if(n>4) n = 4
-        if()
+      
     }
 
 }
