@@ -18,3 +18,8 @@
 .reveal .small {
     font-size:smaller;
 }
+
+.reveal .photos img {
+    border:none;
+    position:absolute;
+}
