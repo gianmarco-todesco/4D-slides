@@ -108,7 +108,7 @@ class GeometricModel {
         }
 
         // check
-        const q = this.scene.meshes.filter(mesh=>mesh.name.startsWith("model-dot-inst"))
+        const q = this.scene.meshes.filter(mesh=>mesh.name.startsWith(this.name + "-dot-inst"))
         if(this.usedVertices > 0) {
             if(this.usedVertices-1 != q.length) {
 
