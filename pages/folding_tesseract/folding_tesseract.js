@@ -6,14 +6,6 @@ const slide = {
 
 }
 
-/*
-var foldingTesseract;
-
-var myScene;
-
-var minCameraRadius = 7;
-var maxCameraRadius = 10.5;
-*/
 
 function setup() {
     const maxCameraRadius = 10.5;
@@ -30,14 +22,14 @@ function setup() {
         new BABYLON.Vector3(0.0,0.0,0.0), scene);
     light.parent = camera;
     
-    const foldingTesseract = slide.foldingTesseract = new FoldingTesseract("ft", scene);
+    const foldingTesseract = slide.model = new FoldingTesseract("ft", scene);
     
     // createFoldingTesseractGui(canvas, scene);
     
-    engine.runRenderLoop(function() {
-      scene.render();
-      foldingTesseract.tick();
-    });
+    scene.onKeyboardObservable.add(onKeyEvent);    
+    handlePointer()
+    scene.registerBeforeRender(() => {foldingTesseract.tick()})
+    engine.runRenderLoop(() => { scene.render(); })
     window.addEventListener("resize", onResize);
     
 }
@@ -54,6 +46,72 @@ function cleanup() {
     slide.engine.dispose()
     delete slide.engine
 }
+
+
+function handlePointer() {
+    let status = 0
+    let oldy, oldx
+    let dragging = false
+    slide.scene.onPointerObservable.add(pointerInfo => {
+        switch (pointerInfo.type) {
+            case BABYLON.PointerEventTypes.POINTERDOWN:
+                onPointerDown(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERUP:
+                if(dragging) onPointerUp(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERMOVE:
+                if(dragging) onPointerDrag(pointerInfo)
+                break
+        }
+    });
+    function onPointerDown(pointerInfo) {
+        dragging = false
+        if(pointerInfo.event.offsetX<100 ) {
+            dragging = true
+        }
+        if(dragging) {
+            oldx = pointerInfo.event.offsetX
+            oldy = pointerInfo.event.offsetY
+            setTimeout(() => slide.camera.detachControl(slide.canvas))
+        }
+    }
+    function onPointerUp(pointerInfo) {
+        dragging = 0
+        if(slide.step && slide.step.onPointerUp) {
+            slide.step.onPointerUp(pointerInfo)
+        }
+        slide.camera.attachControl(slide.canvas, true); 
+    }
+    function onPointerDrag(pointerInfo) {
+        let x = pointerInfo.event.offsetX
+        let y = pointerInfo.event.offsetY
+        let dx = x - oldx
+        let dy = -(y - oldy)
+        oldx = x
+        oldy = y
+        const ft = slide.model
+        ft.setAperture(ft.aperture - dy*0.01)
+    }
+}
+
+
+
+function onKeyEvent(kbInfo) {
+    switch (kbInfo.type) {
+        case BABYLON.KeyboardEventTypes.KEYDOWN:        
+            if(kbInfo.event.key == "h") {
+                const ft = slide.model
+                ft.setHoleStatus(ft.hole == 0 ? 1 : 0)
+            } else if(kbInfo.event.key == "r") {
+                slide.model.zwRotationEnabled = !slide.model.zwRotationEnabled
+            }
+            break;
+        case BABYLON.KeyboardEventTypes.KEYUP:
+            break;
+    }
+}
+
 
 //
 // class FoldingTesseract
@@ -189,17 +247,31 @@ FoldingTesseract.prototype.updateVertices = function() {
     var ss = [0, hole_t, hole_t, hole_t + 0.05];
     var ss2 = [0, hole_t, 0.005, 0.0];
 
+    var colors = [
+        [0,0,0,0,0,0], // center
+        [1,1,2,2,3,3], // left
+        [1,1,2,2,3,3], // right
+        [0,0,1,1,0,0], // top 
+        [0,0,1,1,0,0], // middle (between center and bottom)
+        [0,0,3,3,0,0], // front
+        [0,0,3,3,0,0], // back
+        [0,0,2,2,0,0], // bottom
+    ]
     for(var i=0; i<this.ptsData.length; i++) {
         var d = this.ptsData[i];
         var cubeIndex = d[0], faceIndex = d[1], h = d[2], s = d[3];
         
         var u0 = uv0[h][0], v0 = uv0[h][1];
+        var colorIndex = colors[cubeIndex][faceIndex]
+
+        var du = 0.5 * (colorIndex&1)
+        var dv = 0.5 * ((colorIndex>>1)&1)
         
         var st = ss2[s];        
         var u = u0 * (1-st) + 0.5*st;
         var v = v0 * (1-st) + 0.5*st;                
-        uvs[i*4  ] = uvs[i*4+2] = u;
-        uvs[i*4+1] = uvs[i*4+3] = v;
+        uvs[i*4  ] = uvs[i*4+2] = u * 0.5 + du;
+        uvs[i*4+1] = uvs[i*4+3] = v * 0.5 + dv;
 
         st = ss[s];        
         u = u0 * (1-st) + 0.5*st;
