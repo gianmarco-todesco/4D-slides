@@ -17,12 +17,19 @@ function setup() {
     camera.wheelPrecision = 10;
     camera.attachControl(canvas, true);
     
+
     scene.ambientColor = new BABYLON.Color3(0.3,0.3,0.3);
+    let light2 = new BABYLON.PointLight('light1',
+       new BABYLON.Vector3(0.0,0.4,0.0), scene);
+    light2.intensity = 0.3;
+    light2.parent = camera;
     
     let light = new BABYLON.PointLight(
         "light0", 
         new BABYLON.Vector3(0, 5, 0), scene);
     light.intensity = 0.5;
+
+
     let shadowGenerator = slide.sg = new BABYLON.ShadowGenerator(1024, light);
     shadowGenerator.useBlurVarianceShadowMap = true;
     shadowGenerator.blurScale = 4.0;
@@ -32,11 +39,9 @@ function setup() {
     foldingCube.setShadowGenerator(shadowGenerator);
     foldingCube.canvas = canvas;
     
-    let light2 = new BABYLON.PointLight('light1',
-       new BABYLON.Vector3(0.0,0.4,0.0), scene);
-    light2.intensity = 0.3;
-    light2.parent = camera;
     
+
+
     let groundMat = new BABYLON.StandardMaterial("groundMat", scene);
     groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
     groundMat.ambientColor = new BABYLON.Color3(0.4, 0.4, 0.4);
@@ -49,10 +54,7 @@ function setup() {
     
     // createFoldingCubeGui(foldingCube);
     
-    engine.runRenderLoop(function() {
-        // foldingCube.gui.tick();
-        scene.render();
-    });
+    engine.runRenderLoop(function() { scene.render(); });
     window.addEventListener("resize", function () { engine.resize(); });
 }
 
@@ -172,153 +174,36 @@ class FoldingCube {
 } // end of FoldingCube class
 
 
-// === GUI =======================================================================
-
-/*
-function UnfoldingButton(index, parent, x, y) {
-    var L = 6, SP=1, D = L+SP;
-    var width = D * (index==10 ? 4 : 3) + SP;
-    var height = D * 5 + SP;
-    BABYLON.Rectangle2D.call(this, {
-        id: "ub"+index,
-        parent: parent, 
-        x:x, y:y, width:width, height:height,
-        // fill: "#CCCCCC66", 
-    });
-    this.index = index;
-    this.checked = false;
-    var pp = [
-        [[1,0],[0,1],[1,1],[2,1],[1,2],[1,3]],
-        [[0,1],[1,1],[2,1],[2,0],[1,2],[1,3]],
-        [[0,0],[1,0],[2,0],[1,1],[1,2],[1,3]],
-        [[1,0],[1,1],[2,1],[0,2],[1,2],[1,3]],
-        [[0,0],[1,0],[1,1],[2,1],[1,2],[1,3]],
-        [[0,0],[1,0],[1,1],[1,2],[2,2],[1,3]],
-        [[0,0],[1,0],[1,1],[1,2],[1,3],[2,3]],
-        [[0,0],[1,0],[1,1],[1,2],[2,2],[2,3]],
-        [[1,0],[1,1],[1,2],[0,2],[0,3],[0,4]],
-        [[1,0],[1,1],[2,1],[0,2],[1,2],[0,3]],
-        [[2,0],[3,0],[1,1],[2,1],[0,2],[1,2]],        
-    ];
-    var x1 = 0;
-    for(var i=0;i<6;i++) {
-        var x = SP+D*pp[index][i][0], y = height - 1 - D * pp[index][i][1] - L - SP;
-        new BABYLON.Rectangle2D({
-            parent:this,
-            fill:UnfoldingButton.UncheckedColor,
-            x:x,y:y,width:L,height:L
-        });
-        x+=L;
-        if(x>x1)x1=x;
-    }
-    this.innerWidth = width;
-}
-*/
-/*
-
-UnfoldingButton.prototype = Object.create(BABYLON.Rectangle2D.prototype); 
-UnfoldingButton.prototype.constructor = UnfoldingButton;
-
-UnfoldingButton.L = 6;
-UnfoldingButton.SP = 2;
-UnfoldingButton.D = UnfoldingButton.L + UnfoldingButton.SP;
-
-
-UnfoldingButton.prototype.setFill = function(fillColor) {
-    this.children.forEach(function(rect) { rect.fill = fillColor; });
-}
-
-UnfoldingButton.prototype.setChecked = function(checked) {
-    this.checked = checked;
-    if(this.checked) this.setFill(UnfoldingButton.CheckedColor);
-    else this.setFill(UnfoldingButton.UncheckedColor);
-}
-
-UnfoldingButton.CheckedColor = BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.00,0x30/0x100,1.00,1));
-UnfoldingButton.UncheckedColor = BABYLON.Canvas2D.GetSolidColorBrush(new BABYLON.Color4(0.0,0.0,0.0,1));
-
-function UnfoldingButtonsBar(gui) {
-    BABYLON.ScreenSpaceCanvas2D.call(this, gui.scene, {
-        id:"unfoldingButtonsBar",
-        size:new BABYLON.Size(290, 40),
-        x : 0, y : 270,
-        // backgroundFill: "#40408088"
-    });        
-    this.currentIndex = 0;
-    this.buttons = [];
-    var me = this;
-    var onButtonClick = function(btn, e) {
-        var index = btn.index;
-        me.buttons[me.currentIndex].setChecked(false);
-        btn.setChecked(true);
-        me.currentIndex = index;    
-        if(me.onSelected) me.onSelected(index);
-    }
-        
-    var x = 1;
-    for(var i=0;i<11;i++) {
-        var btn = new UnfoldingButton(i, this, x, 1);
-        x += btn.innerWidth + 4;
-        gui.enableGuiBehaviour(btn);        
-        btn.onClick = onButtonClick;
-        this.buttons.push(btn);
-    } 
-    this.buttons[0].setChecked(true);
-    gui.add(this);
-}
-
-UnfoldingButtonsBar.prototype = Object.create(BABYLON.ScreenSpaceCanvas2D.prototype); 
-UnfoldingButtonsBar.prototype.constructor = UnfoldingButtonsBar;
- 
-UnfoldingButtonsBar.prototype.onResize = function(w,h) {
-    this.x = 13;
-    this.y = h - 50;
-    
-}
- 
-function createFoldingCubeGui(canvas, scene) {
-    
-    var gui = foldingCube.gui = new Gui(canvas, scene);
-    
-    unfoldingButtonsBar = new UnfoldingButtonsBar(gui);
-    unfoldingButtonsBar.onSelected = function(index) { foldingCube.configure(index); };
-    
-    new ControlSlider(gui, 1.0, {callback: function(v) { foldingCube.setAperture(1.0-v); } });
-    
-    gui.resize();
-}
-  */
-
 //
 // create the babylon scene, engine etc.
 //
 function createFoldingCubeAnimation() {
-
-
     return scene;
 }
 
-function createFoldingCubeGui(foldingCube) {
-
-    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateFullscreenUI("UI", true, foldingCube.scene);    
-    var slider = new BABYLON.GUI.Slider();    
-    slider.minimum = 0.0;
-    slider.maximum = 1.0;
-    slider.value = 0.0;
-    slider.height = "20px";
-    slider.width = "150px";
-    slider.color = "#003399";
-    slider.background = "grey";
-    slider.top = "-50px";
-    // slider.left = "120px";
-    slider.horizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
-    slider.verticalAlignment = BABYLON.GUI.Control.VERTICAL_ALIGNMENT_BOTTOM;
-
-    slider.onValueChangedObservable.add(function (value) {
-        // console.log(value)
-        foldingCube.setAperture(value)
-    });
 
 
-    advancedTexture.addControl(slider);
+
+function createTickPolygon(name, options, scene) {
+    const m = options.m || 5
+    const r = options.r || 3
+    const h = options.h || 0.05
+
+    const mesh = new BABYLON.Mesh(name, scene)
+    const pts = [...Array(m).keys()].map(i=>Math.PI*2*i/m)
+        .map(a=>new BABYLON.Vector3(r*Math.cos(a), 0, r*Math.sin(a)))
+    const vdb = new VertexDataBuilder()
+    for(let i=0; i<m; i++) {
+        vdb.addSphere(pts[i], h)
+        vdb.addCylinder(pts[i], pts[(i+1)%m], h)
+    }
+    vdb.addXZPolygon(pts, h)
+    vdb.addXZPolygon(pts, -h)
+    vdb.vertexData.applyToMesh(mesh)
+
+    const mat = mesh.material = new BABYLON.StandardMaterial(name+'-mat',scene)
+    mat.diffuseColor.set(0.3,0.5,0.7)
+    mat.specularColor.set(0.3,0.3,0.3)
+    mesh.edgeLength = BABYLON.Vector3.Distance(pts[0], pts[1])
+    return mesh
 }
