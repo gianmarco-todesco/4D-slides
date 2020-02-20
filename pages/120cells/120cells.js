@@ -177,6 +177,22 @@ class PolychoronStructure {
         }
         return cells
     }
+
+    getAdjacentCells(...cells) {
+        const links = this.cellLinks
+        let qs = cells.map(cell=>links[cell].faces.map(link=>link.c))
+        let q = qs.shift()
+        return q.filter(cell => qs.every(q2=>q2.indexOf(cell)>=0))
+    }
+
+    getCommonFace(c1,c2) {
+        const f1 = this.data.cells[c1]
+        const f2 = this.data.cells[c2]
+        const f = f1.filter(i=>f2.indexOf(i)>=0)
+        if(f.length>1) throw "Uh oh"
+        if(f.length==0) return null
+        else return f[0]
+    }
 }
 
 // ==================================================================
@@ -201,8 +217,16 @@ class PolychoronBubbleModel {
             faces: this.pcs.data.faces.map(f=>[]) // active cells
         }
 
+        const pcs = this.pcs
+        let rings = []
+        rings.push(pcs.getRing(98,1))
         
-
+        rings.push(pcs.getRing(100,11))
+        rings.push(pcs.getRing(91,6))
+        rings.push(pcs.getRing(101,4))
+        rings.push(pcs.getRing(51,11))
+        rings.push(pcs.getRing(50,4))
+        
         // this.showRing(98,1)
         // 100,96 // 100,3
         // 91
@@ -420,6 +444,7 @@ class PolychoronBubbleModel {
         return mat
     }
 
+    
 
     showCell(i, colorIndex) {
         const v = this.status
@@ -447,10 +472,16 @@ class PolychoronBubbleModel {
         this.showFaces(facesToShow)
         */
     }
+
     hideCells() {
         this.status.cells.forEach((c,i) => {
             if(c==true) this.showCell(i,0)
-        })        
+        })    
+        this.visualizeFaces()    
+    }
+    setCells(cells, colorIndex) {
+        cells.forEach(cell=>this.showCell(cell, colorIndex))
+        this.visualizeFaces()
     }
 
     showRing(cellIndex, faceIndexInCell, colorIndex) {
