@@ -75,7 +75,7 @@ function populateScene() {
 
     slide.ph.vertices.forEach(v => rtt.renderList.push(v))
     slide.ph.edges.forEach(e => rtt.renderList.push(e))
-
+    rtt.renderList.push(slide.ph.facesMesh)
 
 }
 
@@ -85,6 +85,8 @@ class Polyhedron extends GeometricModel {
         this.beginUpdate()
         data.vertices.forEach(p=> this.addVertex(p, 0.1))
         data.edges.forEach(([a,b])=> this.addEdge(data.vertices[a], data.vertices[b],0.05))
+        let facePts = data.faces[0].map(i=>data.vertices[i])
+        this.addFace(facePts)
         this.endUpdate()
     }
 }
@@ -115,7 +117,7 @@ class MyShadowGenerator {
         let rttCamera = new BABYLON.FreeCamera('rttCamera', new BABYLON.Vector3(0,10,0), scene)
         // rttCamera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA
         rttCamera.rotation.x = Math.PI/2
-        rttCamera.fov = Math.atan(10/5)*2
+        rttCamera.fov = Math.atan(5/10)*2
         rttCamera.minZ = 0.5
         rtt.activeCamera = rttCamera
     
@@ -130,23 +132,25 @@ class MyShadowGenerator {
         let bgColor = new BABYLON.Color3()
     
 
-/*    
     
         rtt.onBeforeRender = (e) => {
             rtt.renderList.forEach(mesh => {
-                mesh._saved = mesh.material
-                mesh.material =  rttMaterial
+                if(mesh.getClassName() == "Mesh" && mesh.name != 'polyhedron-faces') {
+                    mesh._saved = mesh.material
+                    mesh.material =  rttMaterial    
+                }
             })
             bgColor.copyFrom(scene.clearColor)
             scene.clearColor.set(.9,.9,.9)
         }
         rtt.onAfterRender = () => {
             rtt.renderList.forEach(mesh => {
-                mesh.material =  mesh._saved
+                if(mesh.getClassName() == "Mesh" && mesh.name != 'polyhedron-faces') {
+                    mesh.material =  mesh._saved
+                }
             })
             scene.clearColor.copyFrom(bgColor)
         } 
-  */      
 
         return rtt
     }
