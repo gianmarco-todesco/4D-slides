@@ -4,10 +4,10 @@ if(window.self !== window.top) {
     let status = 0
     addEventListener('message', msg => {
         if(msg.data == 'slide:start') {
-                console.log("=========================")
-                console.log("start:", "'"+slide.name+"'")
-                console.log("=========================")
-                setTimeout(setup, 600)
+            console.log("=========================")
+            console.log("start:", "'"+slide.name+"'")
+            console.log("=========================")
+            setTimeout(setup, 600)
         } else if(msg.data == 'slide:stop') {
             console.log("=========================")
             console.log("stop:", "'"+slide.name+"'")
@@ -20,14 +20,12 @@ if(window.self !== window.top) {
             console.log("=========================")
         }
     })
-
-    window.onload = () => {
-        console.log(window.slide)
-
-    }
+        
     addEventListener("load", e=> {
-        console.log(window.slide)
-        const name = window.slide ? window.slide.name : "no-name"
+        if(typeof(slide) === undefined) {
+            throw "Undefined slide"
+        }
+        const name = slide.name
         console.log(name, " loaded (slideshow)")
     })
 

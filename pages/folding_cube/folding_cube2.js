@@ -10,15 +10,17 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        -Math.PI / 2, 0.3, 15, 
+        -Math.PI / 2, 0.3, 50, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 5
     
-    const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
+    // const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
     const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
+
+    // slide.light = light1
 
     populateScene()
     handlePointer()
@@ -51,8 +53,28 @@ function populateScene()
     const scene = slide.scene
     // slide.model = new FoldingCube(slide.scene)
 
-    let a = slide.model = new FoldingPolygon('a', {sideCount:5}, scene) 
-    showWorldAxis(5, scene)
+    let ground = slide.ground = BABYLON.MeshBuilder.CreateGround('ground', {width:40, height:40}, scene)
+    ground.position.y = -3
+    ground.receiveShadows = true;
+
+    let groundMat = ground.material = new BABYLON.StandardMaterial("groundMat", scene);
+    groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+    groundMat.ambientColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+    groundMat.specularColor.set(0.01,0.01,0.01)
+
+    let light = new BABYLON.PointLight(
+        "light0", 
+        new BABYLON.Vector3(0, 20, 0), scene);
+    light.intensity = 0.5;
+
+    let shadowGenerator = slide.sg = new BABYLON.ShadowGenerator(1024, light);
+    shadowGenerator.useBlurVarianceShadowMap = true;
+    shadowGenerator.blurScale = 2.0;
+    // shadowGenerator.setDarkness(0.8);
+    
+
+    let a = slide.model = new FoldingPolygon('a', {}, scene) 
+    // showWorldAxis(5, scene)
 
 }
 
@@ -88,7 +110,9 @@ function handlePointer() {
         let y = pointerInfo.event.offsetY
         let dy = y-oldy
         oldy = y
-        slide.model.fold(slide.model.foldingAngle + dy*0.01) 
+        if(slide.model) {
+            slide.model.fold(slide.model.foldingAngle + dy*0.01) 
+        }
     }
 }
 
@@ -96,12 +120,26 @@ function handlePointer() {
 function onKeyEvent(kbInfo) {
     switch (kbInfo.type) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
-            // console.log("KEY DOWN: ", kbInfo.event.key);
+            console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
-            if(48<=key && key<=48+9) {
-                const num = key-48
-                slide.model.setShape(num)
+            if(slide.model) { slide.model.dispose(); slide.model=null; }
+            const options = {}
+
+            if(key==49) {
+                options.sideCount = 4
+                options.sequence = [[0,0],[1,2],[0,1],[0,2],[0,3]]
+            } else if(key==50) {
+                options.sideCount = 4
+                options.sequence = [[0,0],[1,2],[0,1],[0,2],[0,3]]
+
+            } else if(key==51) {
+                options.sideCount = 5
+                options.sequence = [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],
+                    [1,2],[6,0],[7,1],[7,2],[7,3],[7,4]
+                    ]
             }
+            slide.model = new FoldingPolygon('ph', options, slide.scene)
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
             console.log("KEY UP: ", kbInfo.event.keyCode);
@@ -112,7 +150,9 @@ function onKeyEvent(kbInfo) {
 
 class FoldingPolygon {
     constructor(name, options, scene ) {
-        const sideCount = options.sideCount || 4
+        const sideCount = this.sideCount = options.sideCount || 4
+
+        const sequence = options.sequence || [[0,0],[1,2],[0,1],[0,2],[0,3]]
 
         const mesh = this.mesh = createTickPolygon(name, {m:sideCount}, scene)
         this.faces = [mesh]
@@ -121,10 +161,22 @@ class FoldingPolygon {
         mat.diffuseColor.set(0.3,0.5,0.7)
         mat.specularColor.set(0.3,0.3,0.3)
 
-        this._addFace(0,0)
-        this._addFace(1,2)
+        sequence.forEach(([parent, edge]) => {
+            this._addFace(parent, edge)
+        })
+        
         this.foldingAngle = 0
 
+        slide.sg.getShadowMap().renderList = this.faces.map(f=>f)
+        
+
+
+
+    }
+
+    dispose() {
+        for(let i = this.faces.length-1; i>=0; i--) 
+            this.faces[i].dispose()
     }
 
     _addFace(parentIndex, edgeIndex) {
@@ -156,8 +208,10 @@ class FoldingPolygon {
     }
 
     fold(angle) {
+        const maxAngle = this.sideCount == 4 ? Math.PI/2 : 1.1070623445400032
+        angle = Math.max(0, Math.min(maxAngle, angle))
         this.foldingAngle = angle
-        const rotz = BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0,0,1), angle)
+        const rotz = BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0,0,1), -angle)
 
         for(let i=1; i<this.faces.length;i++) {
             let face = this.faces[i]
