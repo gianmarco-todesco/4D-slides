@@ -76,6 +76,18 @@ class PolychoronStructure {
         this.computeFaceCenters()
         this.computeCellLinks()
         this.computeCellInnerLinks()
+
+
+        let rings = this.rings = []
+        rings.push(this.getRing(98,1))
+        
+        rings.push(this.getRing(100,11))
+        rings.push(this.getRing(91,6))
+        rings.push(this.getRing(101,4))
+        rings.push(this.getRing(51,11))
+        rings.push(this.getRing(50,4))
+
+        rings.push(this.getRing(13,5))
     }
 
     computeCellCenters() {
@@ -217,19 +229,6 @@ class PolychoronBubbleModel {
             faces: this.pcs.data.faces.map(f=>[]) // active cells
         }
 
-        const pcs = this.pcs
-        let rings = []
-        rings.push(pcs.getRing(98,1))
-        
-        rings.push(pcs.getRing(100,11))
-        rings.push(pcs.getRing(91,6))
-        rings.push(pcs.getRing(101,4))
-        rings.push(pcs.getRing(51,11))
-        rings.push(pcs.getRing(50,4))
-        
-        // this.showRing(98,1)
-        // 100,96 // 100,3
-        // 91
 
     }
 
@@ -474,9 +473,7 @@ class PolychoronBubbleModel {
     }
 
     hideCells() {
-        this.status.cells.forEach((c,i) => {
-            if(c==true) this.showCell(i,0)
-        })    
+        for(let i=0;i<this.status.cells.length;i++) this.showCell(i,0)
         this.visualizeFaces()    
     }
     setCells(cells, colorIndex) {
@@ -486,15 +483,14 @@ class PolychoronBubbleModel {
 
     showRing(cellIndex, faceIndexInCell, colorIndex) {
         let ring = this.pcs.getRing(cellIndex, faceIndexInCell)
-        const me = this
-        ring.forEach(i=>me.showCell(i,colorIndex))
-        this.visualizeFaces()
+        this.setCells(ring, colorIndex)
     }
 }
 
 
 function populateScene() {
     slide.model = new PolychoronBubbleModel(PolychoronData.p8)
+    showWorldAxis(5, slide.scene)
 }
 
 
