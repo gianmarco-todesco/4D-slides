@@ -157,7 +157,7 @@ class PolychoronStructure {
                 let moreDistant = -1
                 let maxDist = 0
                 pts.forEach((p,j) => {
-                    let dist = BABYLON.Vector3.Distance(pts[i], pts[j])
+                    let dist = BABYLON.Vector4.Distance(pts[i], pts[j])
                     if(dist>maxDist) { maxDist = dist; moreDistant = j}
                 })
                 innerLink.faces.push(moreDistant)                
@@ -183,6 +183,7 @@ class PolychoronStructure {
 
 class PolychoronBubbleModel {
     constructor() {
+        this._createPalette()
         this.pcs = new PolychoronStructure(PolychoronData.p120)
         this.mesh = this.createFaceMesh(5)
         this.mesh.isVisible = false
@@ -192,14 +193,28 @@ class PolychoronBubbleModel {
 
         this.createVertexBuffers(this.pcs.data.faces.length)
         this.instances = []
-       //  this.mesh.rotation.x=Math.PI/2
-        this.visibility = {
-            cells: this.pcs.data.cells.map(f=>false),
-            faces: this.pcs.data.faces.map(f=>0)
+        //  this.mesh.rotation.x=Math.PI/2
+
+        
+        this.status = {
+            cells: this.pcs.data.cells.map(f=>0), // 0=invisibile; >0=color index
+            faces: this.pcs.data.faces.map(f=>[]) // active cells
         }
 
-        this.showRing(98,1)
+        
 
+        // this.showRing(98,1)
+        // 100,96 // 100,3
+        // 91
+
+    }
+
+    _createPalette() {
+        this.palette = []
+        for(let i = 0; i<8; i++) {
+            let rgb = HSVtoRGB(i/8,0.6,1)
+            this.palette.push(rgb)
+        }
     }
 
     createFaceMesh(m) {
@@ -281,6 +296,7 @@ class PolychoronBubbleModel {
         const originArray = this.originArray = new Float32Array(m*4)
         const e0Array = this.e0Array = new Float32Array(m*4)
         const e1Array = this.e1Array = new Float32Array(m*4)
+        const colorArray = this.colorArray = new Float32Array(m*3)
 
         const engine = slide.engine
         const mesh = this.mesh
@@ -290,10 +306,20 @@ class PolychoronBubbleModel {
         mesh.setVerticesBuffer(buffer.createVertexBuffer("e0", 0, 4))
         buffer = new BABYLON.Buffer(engine, e1Array , true, 4, false, true);
         mesh.setVerticesBuffer(buffer.createVertexBuffer("e1", 0, 4))
+        buffer = new BABYLON.Buffer(engine, colorArray , true, 3, false, true);
+        mesh.setVerticesBuffer(buffer.createVertexBuffer("color", 0, 3))
 
     }
 
-    showFaces(faces) {
+    visualizeFaces() {
+
+        const faces = []
+        let status = this.status
+        status.faces.forEach((cells,i) => {
+            let colors = cells.map(c=>status.cells[c])
+            if(colors.length == 1) faces.push({f:i, c:colors[0]})
+            else if(cells.length == 2) faces.push({f:i, c:Math.min(colors[0], colors[1])})
+        })
 
         // create instances (if needed)
         const mesh = this.mesh
@@ -317,13 +343,22 @@ class PolychoronBubbleModel {
             array[4*i+2]=p.z
             array[4*i+3]=p.w
         }
+        function assign3(array, i, c) { 
+            array[3*i]=c[0]
+            array[3*i+1]=c[1]
+            array[3*i+2]=c[2]
+        }
 
         const data = this.pcs.data
         const originArray = this.originArray
         const e0Array = this.e0Array
         const e1Array = this.e1Array
+        const colorArray = this.colorArray
         
-        faces.forEach((faceIndex,i) => {
+        faces.forEach((face,i) => {
+            const faceIndex = face.f
+            const colorIndex = face.c
+
             const f = data.faces[faceIndex]
             let pts = f.map(j=>data.vertices[j])
             let center = new BABYLON.Vector4(0,0,0,0);
@@ -339,7 +374,8 @@ class PolychoronBubbleModel {
 
             assign(originArray,i,center)
             assign(e0Array,i,e0.scale(r))
-            assign(e1Array,i,e1.scale(r))      
+            assign(e1Array,i,e1.scale(r)) 
+            assign3(colorArray, i, this.palette[colorIndex])     
         })
 
 
@@ -351,6 +387,8 @@ class PolychoronBubbleModel {
         mesh.setVerticesBuffer(buffer.createVertexBuffer("e0", 0, 4))
         buffer = new BABYLON.Buffer(engine, e1Array , true, 4, false, true);
         mesh.setVerticesBuffer(buffer.createVertexBuffer("e1", 0, 4))
+        buffer = new BABYLON.Buffer(engine, colorArray , true, 3, false, true);
+        mesh.setVerticesBuffer(buffer.createVertexBuffer("color", 0, 3))
     }
 
 
@@ -382,30 +420,44 @@ class PolychoronBubbleModel {
         return mat
     }
 
-    showCell(i, flag) {
-        const v = this.visibility
-        if(v.cells[i] == flag) return
-        v.cells[i] = flag
 
-        this.pcs.data.cells[i].forEach(faceIndex => {
-            v.faces[faceIndex] += flag ? 1 : -1
-        })
+    showCell(i, colorIndex) {
+        const v = this.status
+        if(v.cells[i] == colorIndex) return
+        v.cells[i] = colorIndex
+
+        if(colorIndex > 0) {
+            this.pcs.data.cells[i].forEach(faceIndex => {
+                const lst = v.faces[faceIndex]                
+                if(lst.indexOf(i)<0) lst.push(i)
+            })    
+        } else {
+            this.pcs.data.cells[i].forEach(faceIndex => {
+                const lst = v.faces[faceIndex]  
+                const j = lst.indexOf(i) 
+                if(j>=0) lst.splice(j,1)             
+            })    
+        }
+        // this.visualizeFaces()
+        /*
         const facesToShow = []
         v.faces.forEach((refCount, i) => {
             if(refCount>0) facesToShow.push(i)
         })
         this.showFaces(facesToShow)
+        */
     }
     hideCells() {
-        this.visibility.cells.forEach((c,i) => {
-            if(c==true) this.showCell(i,false)
+        this.status.cells.forEach((c,i) => {
+            if(c==true) this.showCell(i,0)
         })        
     }
 
-    showRing(cellIndex, faceIndexInCell) {
+    showRing(cellIndex, faceIndexInCell, colorIndex) {
         let ring = this.pcs.getRing(cellIndex, faceIndexInCell)
         const me = this
-        ring.forEach(i=>me.showCell(i,true))
+        ring.forEach(i=>me.showCell(i,colorIndex))
+        this.visualizeFaces()
     }
 }
 
@@ -423,7 +475,7 @@ function populateScene() {
     precision highp float;
 
     // Attributes
-    attribute vec3 position;
+    attribute vec3 position, color;
     attribute vec4 origin, e0, e1;
 
     // Uniforms
@@ -434,6 +486,7 @@ function populateScene() {
     varying vec3 v_pos;
     varying vec3 v_surfaceToLight;
     varying vec3 v_surfaceToView;
+    varying vec3 v_color;
 
 
     #define PI 3.1415926535897932384626433832795
@@ -446,6 +499,7 @@ function populateScene() {
     }
 
     void main(void) {
+        v_color = color;
         vec2 uv = vec2(position.x, position.z);
 
         vec3 p = fun(uv.x, uv.y);
@@ -515,7 +569,7 @@ BABYLON.Effect.ShadersStore[shaderName + "FragmentShader"]= `
     varying vec3 v_surfaceToView;
     uniform vec3 cameraPosition;
     uniform mat4 world;
-
+    varying vec3 v_color;
     
     void main(void) {
         vec3 vLightPosition = cameraPosition + vec3(0.0,1.0,0.0); // vec3(0, 20, 10);
@@ -528,7 +582,7 @@ BABYLON.Effect.ShadersStore[shaderName + "FragmentShader"]= `
 
 
         vec3 lightVectorW = normalize(vLightPosition - vPositionW);
-        vec3 color = vec3(0.1,0.5,0.7); // texture2D(textureSampler, vUV).rgb;
+        vec3 color = v_color; // vec3(0.1,0.5,0.7); // texture2D(textureSampler, vUV).rgb;
     
         // diffuse
         float ndl = max(0., dot(vNormalW, lightVectorW));
