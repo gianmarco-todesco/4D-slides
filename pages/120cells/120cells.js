@@ -21,9 +21,14 @@ function setup() {
     const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
-    populateScene()
+    slide.model = new PolychoronBubbleModel(PolychoronData.p8)
+    showWorldAxis(5, slide.scene)
+
+    slide.stepManager = new StepManager()
+    slide.stepManager.setStep(0)
     
     scene.registerBeforeRender(tick)
+    scene.onKeyboardObservable.add(onKeyEvent);
     engine.runRenderLoop(() => scene.render())
     window.addEventListener("resize", onResize)
 }
@@ -45,32 +50,63 @@ function onResize() {
 
 
 
-let stop = false
+let stop = true
 
 function tick() {
-    /*
+    return
     const theta = performance.now() * 0.0001;
     const cs = Math.cos(theta);
     const sn = Math.sin(theta);
     slide.model.mesh.material.setMatrix('rot4', BABYLON.Matrix.FromArray([
+    /*
         cs,0,0,-sn,
         0,1,0,0,
         0,0,1,0,
         sn,0,0,cs
-    ]))
-    */
-
+        */
+       /*
+        1,0,0,0,
+        0,1,0,0,
+        0,0,cs,-sn,
+        0,0,sn,cs
+        */
+       cs,0,0,-sn,
+       0,1,0,0,
+       0,0,1,0,
+       sn,0,0,cs
+   ]))
+    
    slide.model.mesh.material.setVector3("cameraPosition", slide.camera.position);
 }
 
+
+
+function onKeyEvent(kbInfo) {
+    switch (kbInfo.type) {
+        case BABYLON.KeyboardEventTypes.KEYDOWN:
+            // console.log("KEY DOWN: ", kbInfo.event.key);
+            const key = kbInfo.event.keyCode
+            if(kbInfo.event.key == "s") slide.stepManager.next();
+            else if(kbInfo.event.key == "a") slide.stepManager.prev();
+    }
+}
+ 
 
 // ==================================================================
 
 let uffa = {}
 
+/*
+v0 v1 
+
+
+V 
+*/
+
 
 class PolychoronStructure {
     constructor(data) {
+        this.rotateData(data)
         this.data = data
         this.computeCellCenters()
         this.computeFaceCenters()
@@ -90,6 +126,17 @@ class PolychoronStructure {
         rings.push(this.getRing(13,5))
     }
 
+    rotateData(data) {
+        const phi = Math.PI - Math.atan(2)
+        const cs = Math.cos(phi), sn = Math.sin(phi)
+        data.vertices.forEach(p=> {
+            let x = p.x, z = p.z
+            p.x = cs * x - sn * z
+            p.z = sn * x + cs * z
+
+        })
+
+    }
     computeCellCenters() {
         const data = this.data
         const vertices = data.vertices
@@ -206,6 +253,70 @@ class PolychoronStructure {
         else return f[0]
     }
 }
+
+// ==================================================================
+
+class StepManager {
+    constructor() {
+        this.step = -1
+    }
+    next() { this.setStep(this.step+1) }
+    prev() { this.setStep(this.step-1) }
+    
+    setStep(index) {
+        const steps = [
+            [1,1],[1,2],[1,10],
+            [2,1],[2,2],[2,10],
+            [3,1],[3,2],[3,10],
+            [4,1], [4,10],
+            [5,1], [5,10],
+            [6,1], [6,10],
+            
+        ]
+
+        index = Math.max(0,Math.min(steps.length-1,index))
+        if(this.step == index) return
+        const oldStep = this.step
+        this.step = index
+
+        const md = slide.model
+        const pcs = md.pcs
+
+
+        for(let i=0;i<120;i++) md.showCell(i,0)
+        const [m,k] = steps[this.step]
+        for(let i=0; i<m-1; i++) this.showRing(i,0,10,i+1,false)        
+        if(k==10 && oldStep == this.step-1) {
+            this.showRing(m-1,0,steps[oldStep][1]+1,m, true)
+            this.completeRing(m-1,steps[oldStep][1],m)
+        } else {
+            this.showRing(m-1,0,k,m,true)   
+        }
+    }
+
+    showRing(ringIndex, start, end, colorIndex, commit=true) {
+        const ring = slide.model.pcs.rings[ringIndex]
+        const cells = []
+        for(let i=start; i<end; i++) cells.push(ring[i])
+        slide.model.showCells(cells, colorIndex, commit)
+
+    }
+
+    completeRing(ringIndex, start, colorIndex) {
+        let i = start
+        const ring = slide.model.pcs.rings[ringIndex]
+        let intervalId = setInterval(() => {
+            i++
+            console.log("beep", i)
+            if(i>=10) {
+                clearInterval(intervalId)
+            } else {
+                slide.model.showCells([ring[i]],colorIndex)
+            }
+        }, 50)
+    }
+}
+
 
 // ==================================================================
 
@@ -476,22 +587,18 @@ class PolychoronBubbleModel {
         for(let i=0;i<this.status.cells.length;i++) this.showCell(i,0)
         this.visualizeFaces()    
     }
-    setCells(cells, colorIndex) {
+    showCells(cells, colorIndex, commit = true) {
         cells.forEach(cell=>this.showCell(cell, colorIndex))
-        this.visualizeFaces()
+        if(commit) this.visualizeFaces()
     }
 
-    showRing(cellIndex, faceIndexInCell, colorIndex) {
+    showRing(cellIndex, faceIndexInCell, colorIndex, commit = true) {
         let ring = this.pcs.getRing(cellIndex, faceIndexInCell)
-        this.setCells(ring, colorIndex)
+        this.showCells(ring, colorIndex, commit)
     }
 }
 
 
-function populateScene() {
-    slide.model = new PolychoronBubbleModel(PolychoronData.p8)
-    showWorldAxis(5, slide.scene)
-}
 
 
 (()=>{
