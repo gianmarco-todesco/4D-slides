@@ -22,7 +22,7 @@ function setup() {
     light2.parent = camera
 
     slide.model = new PolychoronBubbleModel(PolychoronData.p8)
-    showWorldAxis(5, slide.scene)
+    // showWorldAxis(5, slide.scene)
 
     slide.stepManager = new StepManager()
     slide.stepManager.setStep(0)
@@ -181,11 +181,11 @@ class PolychoronStructure {
         let rings = this.rings = []
         rings.push(this.getRing(98,1))
         
-        rings.push(this.getRing(100,11))
-        rings.push(this.getRing(91,6))
         rings.push(this.getRing(101,4))
         rings.push(this.getRing(51,11))
         rings.push(this.getRing(50,4))
+        rings.push(this.getRing(100,11))
+        rings.push(this.getRing(91,6))
 
         rings.push(this.getRing(13,5))
     }
@@ -335,6 +335,8 @@ class StepManager {
             [4,1], [4,10],
             [5,1], [5,10],
             [6,1], [6,10],
+            [7,1], [7,2], [7,3], [7,4], [7,5], [7,10],
+            
             
         ]
 
@@ -726,7 +728,8 @@ class PolychoronBubbleModel {
     varying vec3 v_surfaceToLight;
     varying vec3 v_surfaceToView;
     varying vec3 v_color;
-
+    varying float err;
+    
 
     #define PI 3.1415926535897932384626433832795
 
@@ -747,6 +750,7 @@ class PolychoronBubbleModel {
         vec3 dpdv = fun(uv.x, uv.y+epsilon) - fun(uv.x, uv.y-epsilon) ;
         vec3 norm = normalize(cross(dpdu, dpdv));
         v_pos = p;
+        if(p.x*p.x+p.y*p.y+p.z*p.z>100.0) err = 1.0;
 
         gl_Position = worldViewProjection * vec4(p, 1.0);
         // v_norm = (worldView * vec4(norm, 0.0)).xyz;
@@ -809,8 +813,11 @@ BABYLON.Effect.ShadersStore[shaderName + "FragmentShader"]= `
     uniform vec3 cameraPosition;
     uniform mat4 world;
     varying vec3 v_color;
-    
+    varying float err;
+
     void main(void) {
+        if(err>0.0) discard;
+
         vec3 vLightPosition = cameraPosition + vec3(0.0,1.0,0.0); // vec3(0, 20, 10);
 
         vec3 vPositionW = vec3(world * vec4(v_pos, 1.0));

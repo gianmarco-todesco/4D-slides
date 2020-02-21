@@ -7,10 +7,10 @@ function setup() {
     let canvas = slide.canvas = document.getElementById("renderCanvas")
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
-    scene.clearColor.set(1,1,1)
+    // scene.clearColor.set(1,1,1)
 
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        -Math.PI / 2, 0.0, 10, 
+        -Math.PI / 2, 0.0, 8, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -136,7 +136,7 @@ class YendredModel {
         mat.diffuseTexture = new BABYLON.Texture('images/yendred4.png')
         mat.specularColor.set(0,0,0)
         mat.diffuseColor.copyFrom(this.floorColor)
-        yendred.position.set(-3,0,-1)
+        yendred.position.set(-3,0,-0.2)
 
         const floor = this.floor = BABYLON.MeshBuilder.CreateGround('floor', { width:12, height:12 }, scene)
         mat = floor.material = new BABYLON.StandardMaterial('floor-mat', scene)
@@ -162,8 +162,8 @@ class YendredModel {
         let rays = this.computeRays()
         var lineSystem = this.lineSystem = BABYLON.MeshBuilder.CreateLineSystem(
             "lineSystem", {lines: rays, updatable: true}, scene);
-        lineSystem.color.set(0.7,0.7,0.7)
-        lineSystem.alpha = 0.2
+        lineSystem.color.set(0.4,0.4,0.4)
+        lineSystem.alpha = 0.7
     }
 
     computeRays() {        

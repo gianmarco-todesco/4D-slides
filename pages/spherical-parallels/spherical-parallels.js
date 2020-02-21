@@ -213,7 +213,7 @@ function createMesh() {
     vertexData.applyToMesh(mesh);
 
     // create instances
-    const N = 5
+    const N = 9
 
     for(let i=1; i<N; i++) {
         const inst1 = mesh.createInstance("inst-"+i)
@@ -223,9 +223,9 @@ function createMesh() {
     const phiCssnArray = new Float32Array(N*2)
     const colorsArray = new Float32Array(N*3)
 
-    const vv = [0.1,0.3,0.5,0.7,0.9]
+    const vv = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
     vv.forEach((v,i) => {    
-        const phi = Math.PI*0.5 * v;
+        const phi = v;
         phiCssnArray[i*2] = Math.cos(phi);
         phiCssnArray[i*2+1] = Math.sin(phi);
 
@@ -351,7 +351,7 @@ vec4 lit(float l ,float h, float m) {
 
 // uniform sampler2D textureSampler;
 void main(void) {
-    if(err > 0.0 || abs(v_pos.x) > 6.0 || abs(v_pos.y) > 2.0 || abs(v_pos.z) > 1.0) discard;
+    if(err > 0.0 || abs(v_pos.x) > 6.0 || abs(v_pos.y) > 2.0 || abs(v_pos.z) > 1.5) discard;
     else 
     {
         vec3 norm = normalize(v_norm);

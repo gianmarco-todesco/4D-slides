@@ -10,11 +10,11 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        1.5, 1.38, 4, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
-    camera.lowerRadiusLimit = 5
+    camera.lowerRadiusLimit = 2
     
     const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
     const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
@@ -23,6 +23,9 @@ function setup() {
     populateScene()
     
     scene.registerBeforeRender(tick)
+    scene.onKeyboardObservable.add(onKeyEvent);
+    handlePointer()
+
     engine.runRenderLoop(() => scene.render())
     window.addEventListener("resize", onResize)
 }
@@ -49,10 +52,125 @@ function populateScene() {
 let stop = false
 
 function tick() {
+    /*
     if(stop==false) {
         slide.model.w0 = Math.sin(performance.now()*0.0001)
         slide.model.update()    
-    }    
+    } 
+    */   
+}
+
+// ============================================================================
+
+function handlePointer() {
+    let status = 0
+    let oldx, oldy
+    slide.scene.onPointerObservable.add(pointerInfo => {
+        switch (pointerInfo.type) {
+            case BABYLON.PointerEventTypes.POINTERDOWN:
+                onpointerdown(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERUP:
+                if(status != 0) onpointerup(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERMOVE:
+                if(status != 0) onpointerdrag(pointerInfo)
+                break
+        }
+    });
+    function onpointerdown(pointerInfo) {
+        console.log(pointerInfo)
+        if(pointerInfo.pickInfo.pickedMesh) {
+            console.log(pointerInfo.pickInfo.pickedMesh.name)
+        }
+        if(pointerInfo.event.offsetX<100) {
+            status = 1
+        } else if(pointerInfo.pickInfo.pickedMesh) {
+            status = 2
+        }
+        if(status != 0) {
+            oldx = pointerInfo.event.offsetX
+            oldy = pointerInfo.event.offsetY
+            setTimeout(() => slide.camera.detachControl(slide.canvas))
+        }
+    }
+    function onpointerup(pointerInfo) {
+        status = 0
+        slide.camera.attachControl(slide.canvas, true); 
+    }
+    function onpointerdrag(pointerInfo) {
+        
+        let x = pointerInfo.event.offsetX
+        let y = pointerInfo.event.offsetY
+        let dx = x-oldx
+        let dy = y-oldy
+        oldx = x
+        oldy = y
+        if(status==1) {
+            slide.model.w0 += dy * 0.01
+            slide.model.update()  
+        }
+        else if(status == 2) {
+
+            slide.model.matrix = slide.model.matrix.multiply(getRotation(0,3,dx*0.01))
+            slide.model.matrix = slide.model.matrix.multiply(getRotation(1,3,dy*0.01))
+            slide.model.update()
+            /*
+            const RotX = BABYLON.Matrix.RotationX
+            const RotZ = BABYLON.Matrix.RotationZ
+           
+            slide.model.matrix = 
+                slide.model.matrix
+                .multiply(RotZ(dx*0.01))
+                .multiply(RotX(dy*0.01))                
+            slide.model.update()
+            */
+
+        }
+    }
+
+}
+
+
+function getRotation(e1,e2,theta) {
+    const cs = Math.cos(theta)
+    const sn = Math.sin(theta)
+    const matrix = new BABYLON.Matrix()
+    for(let i=0;i<4;i++) {
+        for(let j=0;j<4;j++) {
+            let v
+            if(i==e1 && j==e1 || i==e2 && j==e2) v = cs
+            else if(i==e1 && j==e2) v = sn
+            else if(i==e2 && j==e1) v = -sn
+            else v = (i==j) ? 1 : 0
+            matrix.m[i*4+j] = v
+        }
+    }
+    return matrix
+
+}
+
+function onKeyEvent(kbInfo) {
+    switch (kbInfo.type) {
+        case BABYLON.KeyboardEventTypes.KEYDOWN:
+            console.log("KEY DOWN: ", kbInfo.event.key);
+            const key = kbInfo.event.keyCode
+            if(49<=key && key<=49+9) {
+                let data 
+                if(key == 49) data = PolychoronData.p5
+                else if(key == 50) data = PolychoronData.p8
+                else if(key == 51) data = PolychoronData.p16
+                else if(key == 52) data = PolychoronData.p24
+                else if(key == 53) data = PolychoronData.p120
+                else if(key == 56) data = PolychoronData.p600
+                else break;
+                slide.model.setShape(data)
+            }
+            break;
+        case BABYLON.KeyboardEventTypes.KEYUP:
+            console.log("KEY UP: ", kbInfo.event.keyCode);
+            break;
+    }
 }
 
 // ============================================================================
@@ -93,6 +211,10 @@ class PolychoronSectionModel extends GeometricModel {
         this.matrix = BABYLON.Matrix.Identity()
         this.w0 = 0.
 
+        this.edge.material.diffuseColor.set(0.3,0.6,0.6)
+        this.dot.material.diffuseColor.set(0.3,0.6,0.6)
+        
+
         let theta = Math.PI*0.25
         let csTheta = Math.cos(theta)
         let snTheta = Math.sin(theta)
@@ -128,6 +250,15 @@ class PolychoronSectionModel extends GeometricModel {
 
         this.update()
     }
+
+
+    setShape(data) {
+        this.data = data
+        this.matrix = BABYLON.Matrix.Identity()
+        this.w0 = 0.
+        this.update()
+    }
+
     update() {
         const me = this
         const mat = this.matrix
@@ -143,12 +274,14 @@ class PolychoronSectionModel extends GeometricModel {
 
         me.beginUpdate()
 
+        const thickness = 0.01
+
         // pts = new points; tb[edgeId] => point index
         const pts = []
         const tb = {}
         const m = pts4.length
         edgePoints.forEach(([a,b,p])=> { 
-            const j = me.addVertex(p,0.05)
+            const j = me.addVertex(p,thickness)
             tb[a*m+b] = tb[b*m+a] = j
             pts.push(p)
         })
@@ -166,7 +299,7 @@ class PolychoronSectionModel extends GeometricModel {
                 a = b
             })
             if(js.length >= 2) {
-                me.addEdge(pts[js[0]], pts[js[1]], 0.03)
+                me.addEdge(pts[js[0]], pts[js[1]], thickness)
                 faceTable[faceIndex] = [js[0], js[1]]
             }
         })

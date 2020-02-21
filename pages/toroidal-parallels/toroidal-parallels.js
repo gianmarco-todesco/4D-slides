@@ -13,7 +13,7 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
     
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        1.34,1.07, 10, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -167,7 +167,7 @@ function createBox()
 
     let pts = [...Array(8).keys()].map(i=>
         new BABYLON.Vector3(
-            (2*((i>>0)&1)-1) * 2.0,
+            (2*((i>>0)&1)-1) * 5.0,
             (2*((i>>1)&1)-1) * 2.0,
             (2*((i>>2)&1)-1) * 2.0))
     let arr3 = []    
@@ -213,7 +213,7 @@ function createMesh() {
     vertexData.applyToMesh(mesh);
 
     // create instances
-    const N = 5
+    const N = 9
 
     for(let i=1; i<N; i++) {
         const inst1 = mesh.createInstance("inst-"+i)
@@ -223,7 +223,7 @@ function createMesh() {
     const phiCssnArray = new Float32Array(N*2)
     const colorsArray = new Float32Array(N*3)
 
-    const vv = [0.1,0.3,0.5,0.7,0.9]
+    const vv = [0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9]
     vv.forEach((v,i) => {    
         const phi = Math.PI*0.5 * v;
         phiCssnArray[i*2] = Math.cos(phi);
@@ -351,7 +351,7 @@ vec4 lit(float l ,float h, float m) {
 
 // uniform sampler2D textureSampler;
 void main(void) {
-    if(err > 0.0 || abs(v_pos.x) > 2.0 || abs(v_pos.y) > 2.0 || abs(v_pos.z) > 2.0) discard;
+    if(err > 0.0 || abs(v_pos.x) > 5.0 || abs(v_pos.y) > 2.0 || abs(v_pos.z) > 2.0) discard;
     else 
     {
         vec3 norm = normalize(v_norm);

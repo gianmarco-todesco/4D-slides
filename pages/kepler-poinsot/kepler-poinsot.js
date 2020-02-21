@@ -12,11 +12,11 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        Math.PI / 2, Math.PI / 2, 8, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
-    camera.wheelPrecision=20
-    camera.lowerRadiusLimit = 5
+    camera.wheelPrecision=40
+    camera.lowerRadiusLimit = 2
     
     const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
     const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
@@ -51,7 +51,7 @@ function tick() {
 function createTickPolygon(name, options, scene) {
     const m = options.m || 5
     const r = options.r || 3
-    const h = options.h || 0.05
+    const h = options.h || 0.02
 
     const mesh = new BABYLON.Mesh(name, scene)
     const pts = [...Array(m).keys()].map(i=>Math.PI*2*i/m)
@@ -110,7 +110,7 @@ function handlePointer() {
         let y = pointerInfo.event.offsetY
         let dy = y-oldy
         oldy = y
-        slide.model.param = slide.model.param + dy*0.01
+        slide.model.param = slide.model.param + dy*0.002
     }
 }
 
