@@ -96,6 +96,7 @@ class YendredModel {
             this.showPolyhedron(true, false)
         } else if(key=='0') { 
             this.showPolyhedron(false)
+            this.lineSystem.isVisible = false
         } else if(key=='r') {
             this.lineSystem.isVisible = !this.lineSystem.isVisible
         } else if(key=='f') {

@@ -91,7 +91,7 @@ function handlePointer() {
 function populateScene() {
     const scene = slide.scene
 
-    showWorldAxis(4, scene)
+    // showWorldAxis(4, scene)
     slide.model = new BookAndSphereModel()
 }
 

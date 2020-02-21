@@ -130,7 +130,7 @@ function onKeyEvent(kbInfo) {
                 options.sequence = [[0,0],[1,2],[0,1],[0,2],[0,3]]
             } else if(key==50) {
                 options.sideCount = 4
-                options.sequence = [[0,0],[1,2],[0,1],[0,2],[0,3]]
+                options.sequence = [[0,0],[0,2],[1,2],[2,3],[1,1]]
 
             } else if(key==51) {
                 options.sideCount = 5

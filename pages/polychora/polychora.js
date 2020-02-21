@@ -15,7 +15,7 @@ function setup() {
 
 
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        1.8,1.15, 6, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -231,7 +231,9 @@ function onKeyEvent(kbInfo) {
                 }
                 slide.model = new PolychoronModel('pc', data, slide.scene)
                 slide.model.update()  
-                slide.matrix = BABYLON.Matrix.Identity()              
+                slide.matrix = BABYLON.Matrix.Identity()  
+                slide.camera.beta = 1.15
+                slide.camera.alpha = 1.8            
             } else if(key == "c") {
                 if(slide.model.bigEdges.length == 0)    
                     slide.model.selectCell(0)
