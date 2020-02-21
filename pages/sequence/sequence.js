@@ -2,7 +2,7 @@ const slide = {
     name: 'sequence',
     targetDim: 0, 
     currentDim: 0,
-    currentDimSpeed: 0.001
+    currentDimSpeed: 0.0007
 }
 
 
@@ -13,9 +13,11 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        Math.PI / 2, Math.PI / 2, 4, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
+    camera.wheelPrecision=20
+    camera.lowerRadiusLimit = 5
     
     scene.ambientColor.set(0.5,0.5,0.5)
 
@@ -36,7 +38,7 @@ function setup() {
     //sg.useBlurExponentialShadowMap  = true
 
     // background
-    createGround()
+    // createGround()
 
 /*
     let plane = BABYLON.MeshBuilder.CreatePlane('a', {size:3}, scene)
@@ -145,8 +147,8 @@ class Model {
                 if((i>>j)&1) {
                     let edge = BABYLON.MeshBuilder.CreateCylinder("cyl-"+edgeCount, {diameter:0.05, height:1}, scene)
                     rl.push(edge)
-                    edge.mat = new BABYLON.StandardMaterial('mat2-'+edgeCount, scene)
-                    edge.mat.diffuseColor.set(0.5,0.5,0.5)
+                    edge.material = new BABYLON.StandardMaterial('mat2-'+edgeCount, scene)
+                    edge.material.diffuseColor.set(0.5,0.5,0.5)
                     sphere.edges[j] = edge
                     edgeCount++
                 }
@@ -159,14 +161,18 @@ class Model {
     }
     updatePositions(v) {
         const d = Math.floor(v)
-        const t = v-d
+        let t = v-d
+        const t1 = 0.5
+        let ct = 0
+        if(t>t1) {ct = (t-t1)/(1-t1); t=1}
+        else { ct = 0; t = t/t1}
 
         const ee = [
             new BABYLON.Vector3(1,0,0),
             new BABYLON.Vector3(0,1,0),
             new BABYLON.Vector3(0,0,1),
             new BABYLON.Vector3(0.5,0.5,0.5),
-            new BABYLON.Vector3(-0.4,0.25,0.25)            
+            new BABYLON.Vector3(-0.4,0.25,0.3)            
         ]
         for(let i=0; i<32; i++) {
             let visible = true
@@ -194,6 +200,11 @@ class Model {
                 let p1 = this.vertices[i].position
                 let p0 = this.vertices[i-(1<<j)].position
                 this.place(edge, p0, p1)
+                if(j==d) {
+                    let q = 1 - Math.sin(Math.PI/2*ct)
+                    edge.material.diffuseColor.set(1,1-q,1-q)
+                }
+                else edge.material.diffuseColor.set(1,1,1)
             }
 
 
@@ -210,7 +221,7 @@ class Model {
             (vstart.z+vend.z)*0.5)
             
            
-        edge.scaling.set(1,distance*0.9,1)
+        edge.scaling.set(1,distance,1)
         const delta = vend.subtract(vstart).normalize()
         const up = new BABYLON.Vector3(0, 1, 0)
         var angle = Math.acos(BABYLON.Vector3.Dot(delta, up));
@@ -247,7 +258,7 @@ function onKeyEvent(kbInfo) {
     switch (kbInfo.type) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             const key = kbInfo.event.keyCode
-            if(49<=key && key<=49+4) {
+            if(48<=key && key<=49+4) {
                 slide.targetDim = Math.min(4.999, key-48)
                 
             }
