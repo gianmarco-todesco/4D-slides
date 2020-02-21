@@ -12,7 +12,7 @@ function setup() {
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, 1.34, 15, 
+        1.03, 1.45, 15, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -116,7 +116,7 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
-            if(49<=key && key<=49+4) {
+            if(49<=key && key<=49+9) {
                 slide.model.pivot.dispose()
                 let data 
                 if(key == 49) data = PolyhedronData.p4
@@ -125,7 +125,9 @@ function onKeyEvent(kbInfo) {
                 else if(key == 52) data = PolyhedronData.p12
                 else if(key == 53) data = PolyhedronData.p20
                 else if(key == 56) data = PolyhedronData.pg20
+                else break;
                 slide.model = new PolyhedronModel('model',data, slide.scene)
+                slide.model.pivot.position.y = 3.5
                 slide.model.update()
             }
             break;
@@ -142,6 +144,19 @@ class PolyhedronModel extends GeometricModel {
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
         this.y0 = 0.0
+
+        this.other = new GeometricModel(name+"other", scene)
+        this.other.pivot.parent = this.pivot
+        this.other.edge.material.diffuseColor.set(1,0,0)
+
+        /*
+        var glowLayer = this.glowLayer = new BABYLON.GlowLayer("glow", scene, { 
+            mainTextureFixedSize: 256,
+            blurKernelSize: 64
+        });
+        glowLayer.intensity = 2.0
+        */
+        
     }
 
     update() {
@@ -153,6 +168,7 @@ class PolyhedronModel extends GeometricModel {
         const basePts = this.data.vertices.map(v => Transform(v.scale(2), this.matrix))
         const ins = basePts.map(p=>p.y > y0)
         this.beginUpdate()
+        this.other.beginUpdate()
         basePts.forEach(p => { this.addVertex(p, 0.03) })
 
         let tb = {}
@@ -184,7 +200,7 @@ class PolyhedronModel extends GeometricModel {
                 a = b
             })
             if(segment.length==2) {
-                this.addEdge(segment[0], segment[1], 0.01)
+                this.other.addEdge(segment[0], segment[1], 0.022)
             }
             if(facePts.length>=3) this.addFace(facePts)
         }) 
@@ -195,13 +211,17 @@ class PolyhedronModel extends GeometricModel {
         })
         */
         this.endUpdate()
+        this.other.endUpdate()
+        
     }
 }
 
 
 function populateScene() {
-    let model = slide.model = new PolyhedronModel('model', PolyhedronData.pg20, slide.scene)
+    let model = slide.model = new PolyhedronModel('model', PolyhedronData.p6, slide.scene)
+    model.pivot.position.y = 2.5
     model.update()
+    
 
     const paper = createPaper()
 

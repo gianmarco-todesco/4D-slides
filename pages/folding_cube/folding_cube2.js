@@ -53,7 +53,11 @@ function populateScene()
     const scene = slide.scene
     // slide.model = new FoldingCube(slide.scene)
 
-    let ground = slide.ground = BABYLON.MeshBuilder.CreateGround('ground', {width:40, height:40}, scene)
+    let ground = slide.ground = BABYLON.MeshBuilder
+        .CreateGround('ground', {
+            width:60, 
+            height:50}, 
+            scene)
     ground.position.y = -3
     ground.receiveShadows = true;
 

@@ -91,7 +91,8 @@ function handlePointer() {
         oldx = x
         oldy = y
         const ft = slide.model
-        ft.setAperture(ft.aperture - dy*0.01)
+        const aperture = Math.max(0, Math.min(1, ft.aperture - dy*0.01))
+        ft.setAperture(aperture)
     }
 }
 
