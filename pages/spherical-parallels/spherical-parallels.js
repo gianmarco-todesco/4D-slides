@@ -167,9 +167,9 @@ function createBox()
 
     let pts = [...Array(8).keys()].map(i=>
         new BABYLON.Vector3(
-            (2*((i>>0)&1)-1) * 2.0,
+            (2*((i>>0)&1)-1) * 6.0,
             (2*((i>>1)&1)-1) * 2.0,
-            (2*((i>>2)&1)-1) * 2.0))
+            (2*((i>>2)&1)-1) * 1.0))
     let arr3 = []    
     for(let i=0; i<8; i++) {
         for(let j=0; j<3; j++) {
@@ -351,7 +351,7 @@ vec4 lit(float l ,float h, float m) {
 
 // uniform sampler2D textureSampler;
 void main(void) {
-    if(err > 0.0 || abs(v_pos.x) > 2.0 || abs(v_pos.y) > 2.0 || abs(v_pos.z) > 2.0) discard;
+    if(err > 0.0 || abs(v_pos.x) > 6.0 || abs(v_pos.y) > 2.0 || abs(v_pos.z) > 1.0) discard;
     else 
     {
         vec3 norm = normalize(v_norm);

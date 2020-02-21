@@ -111,8 +111,8 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             // console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
-            if(key == 65) slide.prev()
-            else if(key == 68) slide.next()
+            if(kbInfo.event.key == "a") slide.prev()
+            else if(kbInfo.event.key == "s") slide.next()
             else if(slide.step && slide.step.onKeyDown) {
                 slide.step.onKeyDown(kbInfo.event)
             }
@@ -166,7 +166,7 @@ class ParallelsStep {
     // sphere & parallels
     init() {
         const md = slide.model
-        md.sphereShell.addParallels(10,0.05)
+        md.sphereShell.addParallels(10,0.02)
         md.sphereShell.show()        
     } 
     cleanup() {
@@ -180,7 +180,7 @@ class ParallelsStep {
 class ParallelsWithShadowStep {
     init() {
         const md = slide.model
-        md.sphereShell.addParallels(10,0.05)
+        md.sphereShell.addParallels(10,0.02)
         md.sphereShell.show()        
         md.floor.show()
     }
@@ -195,7 +195,7 @@ class ParallelsWithShadowStep {
 
     }
     onPointerDrag(pointerInfo, dx, dy) {
-        slide.model.sphere.rotation.x += dx*0.003
+        slide.model.sphere.rotation.z += dx*0.01
 
     }
 }
@@ -273,6 +273,15 @@ class PolyhedronWithShadowStep {
         }
     }
 
+    onPointerDown(pointerInfo) { 
+        let pickedMesh = pointerInfo.pickInfo.pickedMesh
+        return pickedMesh == slide.model.sphere || pickedMesh == slide.model.sphereShell.mesh
+
+    }
+    onPointerDrag(pointerInfo, dx, dy) {
+        slide.model.sphere.rotation.z += dx*0.01
+
+    }
 
 
 }
@@ -387,7 +396,7 @@ class FloorWithShadow {
     
         let mat = paper.material = new BABYLON.StandardMaterial('paper-mat', scene)
         mat.backFaceCulling = false
-        mat.diffuseColor.set(0.3,0.3,0.3)
+        mat.diffuseColor.set(0.7,0.7,0.7)
         mat.specularColor.set(0,0,0)     
         return paper   
     }
@@ -406,7 +415,7 @@ class FloorWithShadow {
         let rttMaterial = new BABYLON.StandardMaterial('rtt-mat', scene)
         rttMaterial.diffuseColor.set(0,0,0)
         rttMaterial.specularColor.set(0,0,0)
-        rttMaterial.emissiveColor.set(0.1,0.7,0.85)
+        rttMaterial.emissiveColor.set(0.1,0.4,0.7)
         rttMaterial.ambientColor.set(0,0,0)
         rttMaterial.backFaceCulling = false
 

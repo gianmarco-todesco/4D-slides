@@ -23,6 +23,7 @@ function setup() {
     populateScene()
     
     scene.registerBeforeRender(tick)
+    handlePointer()
     engine.runRenderLoop(() => scene.render())
     window.addEventListener("resize", onResize)
 }
@@ -50,11 +51,107 @@ let stop = false
 
 function tick() {
     if(stop==false) {
-        slide.model.w0 = 4*Math.sin(performance.now()*0.0001)
-        slide.model.update()    
+        // slide.model.w0 = 4*Math.sin(performance.now()*0.0001)
+        // slide.model.update()    
     }    
 }
 
+function handlePointer() {
+    let status = 0
+    let oldx, oldy
+    slide.scene.onPointerObservable.add(pointerInfo => {
+        switch (pointerInfo.type) {
+            case BABYLON.PointerEventTypes.POINTERDOWN:
+                onpointerdown(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERUP:
+                if(status != 0) onpointerup(pointerInfo)
+                break
+            case BABYLON.PointerEventTypes.POINTERMOVE:
+                if(status != 0) onpointerdrag(pointerInfo)
+                break
+        }
+    });
+    function onpointerdown(pointerInfo) {
+        console.log(pointerInfo)
+        if(pointerInfo.pickInfo.pickedMesh) {
+            console.log(pointerInfo.pickInfo.pickedMesh.name)
+        }
+        if(pointerInfo.event.offsetX<100) {
+            status = 1
+        } else if(pointerInfo.pickInfo.pickedMesh) {
+            status = 2
+        }
+        if(status != 0) {
+            oldx = pointerInfo.event.offsetX
+            oldy = pointerInfo.event.offsetY
+            setTimeout(() => slide.camera.detachControl(slide.canvas))
+        }
+    }
+    function onpointerup(pointerInfo) {
+        status = 0
+        slide.camera.attachControl(slide.canvas, true); 
+    }
+    function onpointerdrag(pointerInfo) {
+        
+        let x = pointerInfo.event.offsetX
+        let y = pointerInfo.event.offsetY
+        let dx = x-oldx
+        let dy = y-oldy
+        oldx = x
+        oldy = y
+        if(status==1) {
+            slide.model.w0 = Math.max(-5, Math.min(5, slide.model.w0 + dy*0.03))
+            slide.model.update()
+        }
+        else if(status == 2) {
+            rotate(dx,dy)
+/*
+            const RotX = BABYLON.Matrix.RotationX
+            const RotZ = BABYLON.Matrix.RotationZ
+           
+            slide.model.matrix = 
+                slide.model.matrix
+                .multiply(RotZ(dx*0.01))
+                .multiply(RotX(dy*0.01))                
+            slide.model.update()
+*/
+
+        }
+    }
+
+}
+
+function rotate(dx,dy) {
+
+    let theta = dx*0.01
+    let csTheta = Math.cos(theta)
+    let snTheta = Math.sin(theta)
+
+    let arr = [
+        csTheta,0,0,-snTheta,
+        0,1,0,0,
+        0,0,1,0,
+        snTheta,0,0,csTheta
+        ]
+    let matrix = BABYLON.Matrix.FromArray(arr)
+
+    theta = dy*0.01
+    csTheta = Math.cos(theta)
+    snTheta = Math.sin(theta)
+    arr = [
+        1,0,0,0,
+        0,csTheta,0,-snTheta,
+        0,0,1,0,
+        0,snTheta,0,csTheta
+        ]
+    matrix = matrix.multiply(BABYLON.Matrix.FromArray(arr)) 
+
+
+    slide.model.matrix = slide.model.matrix.multiply(matrix)
+    slide.model.update()
+
+}
 // ============================================================================
 
 class PolychoronSimpleModel extends GeometricModel {
@@ -91,7 +188,7 @@ class PolychoronSectionModel extends GeometricModel {
         super(name,scene)
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
-        this.w0 = 0.
+        this.w0 = -4.88
 
         let theta = Math.PI*0.25
         let csTheta = Math.cos(theta)
@@ -124,7 +221,6 @@ class PolychoronSectionModel extends GeometricModel {
             ]
         this.matrix = this.matrix.multiply(BABYLON.Matrix.FromArray(arr)) 
 
-        this.w0 = 0.5
 
         this.update()
     }
