@@ -104,3 +104,46 @@ PolyhedronData.p20 = (() => {
     return ph
 })()
 
+PolyhedronData.pg20 = (() => {
+    let ph = new PolyhedronData()
+    const f = (-1+Math.sqrt(5))/2
+    ph.vertices = [
+        [0,1,f],[0,1,-f],[0,-1,f],[0,-1,-f],
+        [-1,f,0],[-1,-f,0],[1,f,0],[1,-f,0],
+        [-f,0,1],[f,0,1],[-f,0,-1],[f,0,-1]]
+        .map(v=>new BABYLON.Vector3(...v))
+    
+    ph.faces = [[0,10,2],[0,2,11],[0,5,7],[0,11,5],[0,7,10],[1,3,8],[1,9,3],[1,7,5],[1,5,9],[1,8,7],[2,6,4],[2,4,11],[2,10,6],[3,4,6],[3,9,4],[3,6,8],[4,9,11],[5,11,9],[6,10,8],[7,8,10]]
+    ph.computeEdges()    
+    return ph
+})()
+
+function foobar() {
+    let ico = PolyhedronData.p20 
+    let pts = ico.vertices
+    const Dist = BABYLON.Vector3.Distance
+    const check = (pa,pb) => Math.abs(Dist(pa,pb)-2)<1.e-8
+    const faces = []
+    for(let i1=0;i1<12;i1++) {
+        for(let i2=i1+1;i2<12;i2++) {
+            if(!check(pts[i1],pts[i2])) continue
+            for(let i3=i2+1;i3<12;i3++) {
+                if(!check(pts[i1],pts[i3])) continue
+                if(!check(pts[i2],pts[i3])) continue
+                let p1 = pts[i1]
+                let p2 = pts[i2]
+                let p3 = pts[i3]
+                let q = BABYLON.Vector3.Cross(
+                    p2.subtract(p1),p3.subtract(p1))
+                let center = p1.add(p2).add(p3).scale(1/3)
+                if(BABYLON.Vector3.Dot(center, q)<0) {
+                    faces.push([i1,i3,i2])
+                } else {
+                    faces.push([i1,i2,i3])
+                }            
+            }
+        }
+    }
+
+    return faces
+}

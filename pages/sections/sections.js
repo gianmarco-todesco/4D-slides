@@ -12,7 +12,7 @@ function setup() {
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 20, 
+        Math.PI / 2, 1.34, 15, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -46,38 +46,65 @@ function onResize() {
 
 
 function handlePointer() {
-    let clicked = false
-    let oldy
+    let status = 0
+    let oldx, oldy
     slide.scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
             case BABYLON.PointerEventTypes.POINTERDOWN:
                 onpointerdown(pointerInfo)
                 break
             case BABYLON.PointerEventTypes.POINTERUP:
-                if(clicked) onpointerup(pointerInfo)
+                if(status != 0) onpointerup(pointerInfo)
                 break
             case BABYLON.PointerEventTypes.POINTERMOVE:
-                if(clicked) onpointerdrag(pointerInfo)
+                if(status != 0) onpointerdrag(pointerInfo)
                 break
         }
     });
     function onpointerdown(pointerInfo) {
         console.log(pointerInfo)
+        if(pointerInfo.pickInfo.pickedMesh) {
+            console.log(pointerInfo.pickInfo.pickedMesh.name)
+        }
         if(pointerInfo.event.offsetX<100) {
-            clicked = true
+            status = 1
+        } else if(pointerInfo.pickInfo.pickedMesh) {
+            status = 2
+        }
+        if(status != 0) {
+            oldx = pointerInfo.event.offsetX
             oldy = pointerInfo.event.offsetY
             setTimeout(() => slide.camera.detachControl(slide.canvas))
         }
     }
     function onpointerup(pointerInfo) {
-        clicked = false
+        status = 0
         slide.camera.attachControl(slide.canvas, true); 
     }
     function onpointerdrag(pointerInfo) {
+        
+        let x = pointerInfo.event.offsetX
         let y = pointerInfo.event.offsetY
+        let dx = x-oldx
         let dy = y-oldy
+        oldx = x
         oldy = y
-        slide.model.pivot.position.y -= dy*0.01
+        if(status==1) {
+            slide.model.pivot.position.y -= dy*0.03
+            slide.model.update()
+        }
+        else if(status == 2) {
+            const RotX = BABYLON.Matrix.RotationX
+            const RotZ = BABYLON.Matrix.RotationZ
+           
+            slide.model.matrix = 
+                slide.model.matrix
+                .multiply(RotZ(dx*0.01))
+                .multiply(RotX(dy*0.01))                
+            slide.model.update()
+
+
+        }
     }
 
 }
@@ -97,6 +124,7 @@ function onKeyEvent(kbInfo) {
                 else if(key == 51) data = PolyhedronData.p8
                 else if(key == 52) data = PolyhedronData.p12
                 else if(key == 53) data = PolyhedronData.p20
+                else if(key == 56) data = PolyhedronData.pg20
                 slide.model = new PolyhedronModel('model',data, slide.scene)
                 slide.model.update()
             }
@@ -125,7 +153,7 @@ class PolyhedronModel extends GeometricModel {
         const basePts = this.data.vertices.map(v => Transform(v.scale(2), this.matrix))
         const ins = basePts.map(p=>p.y > y0)
         this.beginUpdate()
-        basePts.forEach(p => { this.addVertex(p, 0.1) })
+        basePts.forEach(p => { this.addVertex(p, 0.03) })
 
         let tb = {}
         this.data.edges.forEach(([a,b],i) => {
@@ -136,7 +164,7 @@ class PolyhedronModel extends GeometricModel {
                 // this.addVertex(p, 0.15) 
                 tb[a+","+b] = tb[b+","+a] = p
             }
-            this.addEdge(pa,pb,0.05)            
+            this.addEdge(pa,pb,0.02)            
         })
         this.data.faces.forEach((f,i)=> {
             let segment = []
@@ -156,7 +184,7 @@ class PolyhedronModel extends GeometricModel {
                 a = b
             })
             if(segment.length==2) {
-                this.addEdge(segment[0], segment[1], 0.02)
+                this.addEdge(segment[0], segment[1], 0.01)
             }
             if(facePts.length>=3) this.addFace(facePts)
         }) 
@@ -172,17 +200,18 @@ class PolyhedronModel extends GeometricModel {
 
 
 function populateScene() {
-    let model = slide.model = new PolyhedronModel('model', PolyhedronData.p6, slide.scene)
+    let model = slide.model = new PolyhedronModel('model', PolyhedronData.pg20, slide.scene)
     model.update()
 
     const paper = createPaper()
 
-    showWorldAxis(3, slide.scene)
+    // showWorldAxis(3, slide.scene)
 
 }
 
 
 function tick() {
+    /*
     const psi = performance.now()*0.0001
     if(slide.model != null) {
         slide.model.matrix = 
@@ -190,6 +219,7 @@ function tick() {
                 BABYLON.Matrix.RotationZ(psi))
         slide.model.update()
     }
+    */
 
     // sphere.position.x = Math.cos(performance.now()*0.001) * 2
 }
@@ -209,6 +239,7 @@ function createPaper() {
     planeMat.backFaceCulling = false
     planeMat.alpha = 0.5
     plane.parent = pivot
+    plane.isPickable = false
 
     const borderMat = new BABYLON.StandardMaterial('paper-border-mat', scene)
     borderMat.diffuseColor.set(0.2,0.4,0.6)
