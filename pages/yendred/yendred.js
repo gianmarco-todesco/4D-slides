@@ -81,14 +81,19 @@ class YendredModel {
 
     onKeyDown(e) {
         const key = e.key
-        if(key=='b') this.hideBook()
+        if(key=='b') {
+            if(this.planiverse.isVisible) this.hideBook();
+            else this.showBook();
+        }
         else if(key=='1') {
+            if(this.planiverse.isVisible) this.hideBook();
             this.ph.change(PolyhedronData.p6)
             this.lineSystem.dispose()
             this.createRays()
             this.addPolyhedronToRtt()
             this.showPolyhedron(true, false)
         } else if(key=='2') {
+            if(this.planiverse.isVisible) this.hideBook();
             this.ph.change(PolyhedronData.p12)
             this.lineSystem.dispose()
             this.createRays()
@@ -110,7 +115,7 @@ class YendredModel {
         let i = 0
         const m = 20
         const me = this
-        const book = this.planiverse
+        const book = this.planiverse;
         let timerId = setInterval(() => {
             if(i++>m) {
                 clearInterval(timerId)
@@ -120,6 +125,11 @@ class YendredModel {
                 book.position.x = 3 + 10*t    
             }
         }, 10)
+    }
+    showBook() {
+        const book = this.planiverse;
+        book.position.x = 3;
+        book.isVisible=true;
     }
     showPolyhedron(visible, faceVisible = true) {
         const ph = this.ph
@@ -138,7 +148,7 @@ class YendredModel {
         mat.diffuseColor.copyFrom(this.floorColor)
         yendred.position.set(-3,0,-0.2)
 
-        const floor = this.floor = BABYLON.MeshBuilder.CreateGround('floor', { width:12, height:12 }, scene)
+        const floor = this.floor = BABYLON.MeshBuilder.CreateGround('floor', { width:12*3, height:12 }, scene)
         mat = floor.material = new BABYLON.StandardMaterial('floor-mat', scene)
         mat.backFaceCulling = false
         mat.specularColor.set(0,0,0)

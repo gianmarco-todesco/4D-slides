@@ -90,10 +90,10 @@
 				<section>
                     <img class="stretch" style="position:relative;left:-100px;" src="images/Dali_Crucifixion_hypercube.jpg">
                     <div style="position:absolute;top:0;right:0;">
-                        <h2>Crucifixion</h2>
-                        <h3>(Corpus Hypercubus)</h3>
-
-                        <p><i>Salvador Dalí, 1954</i></p>
+                        <p style="font-weight:500;font-size:1.3em">Crucifixion</p>
+                        <small>(Corpus Hypercubus)</small>
+                        <p>&nbsp;</p>
+                        <p style="font-style: italic;">Salvador Dalí, 1954</p>
                         
                     </div>
                 </section>
@@ -109,7 +109,7 @@
                         <img src="images/cube2-movie.jpg" height="40%" style="right:0%;bottom:3%">
                     </div>
                 </section>
-				<section data-transition="fade">
+				<!-- section data-transition="fade">
                     <h2>Ipercubi dappertutto</h2>
                     <img class="stretch" src="images/second-life.jpg" >
                     <p class="reference"><strong>—And He Built a Crooked House—</strong><br> 
@@ -119,8 +119,26 @@
                     <h2>Ipercubi dappertutto</h2>
                     <img class="stretch" src="images/videogame.png">
                     <p></p>
-                </section>
+                </section-->
 				
+                <section>
+                    <h4>Immaginare lo spazio 4D</h4>
+
+                    <div style="margin:2em;display: flex; flex-direction: row; align-items:center; justify-content:center;">
+                        <p style="color:teal">Modelli:</p>
+                        <p style="font-size:3em">{</p>
+                        <ul style="display:inline-block">
+                            <li>Proiezioni</li>
+                            <li>Sviluppi</li>
+                            <li>Sezioni</li>
+                        </ul>
+                    </div>
+                    <p >
+                        <span style="color:teal">Strategia:</span> Analogia (con cautela)<br>
+                        Provare a spiegare lo spazio 3D ad un essere 2D
+                    </p>
+                    
+                </section>
 				<section>
                     <video controls class="stretch">
                         <source data-src="videos/homer3d.mp4" type="video/mp4">
@@ -128,11 +146,11 @@
                     <p class="reference">The Simpsons: Season 7, episode 6<br>"Treehouse of Horror VI: Homer 3"</p>
                 </section>
 				<section>
-                    <h2>Yendred</h2>
-                    <iframe class="stretch" data-src="../pages/yendred/yendred.html"></iframe>
+                    <h2>Proiezioni: Yendred</h2>
+                    <iframe class="noborder stretch" data-src="../pages/yendred/yendred.html"></iframe>
                 </section>
 				<section>
-                    <h2>6 Policora regolari</h2>
+                    <h2>I 6 <span style="font-style: oblique">policora</span> regolari</h2>
                     <iframe class="stretch" data-src="../pages/polychora/polychora.html"></iframe>
                 </section>
 				<section>
@@ -144,21 +162,21 @@
                     <iframe class="stretch" data-src="../pages/folding_tesseract/folding_tesseract.html"></iframe>
                 </section>
 				<section>
-                    <h2>Sezioni 3D</h2>
+                    <h2>Sezioni (3D)</h2>
                     <!--iframe class="stretch" data-src="../pages/sections/sections.html"></iframe-->
                     <iframe class="stretch" data-src="../pages/sections2/index.html"></iframe>
                 </section>
 				<section>
-                    <h2>Sezioni 4d</h2>
+                    <h2>Sezioni (4D)</h2>
                     <iframe class="stretch" data-src="../pages/polychora-sections/polychora-sections.html"></iframe>
                 </section>
 				<section>
-                    <h2>gran poliedri!</h2>
+                    <h2>Grande dodecaedro/icosaedro</h2>
                     <iframe class="stretch" data-src="../pages/kepler-poinsot/kepler-poinsot.html"></iframe>
                 </section>
 				<section>
                     <h2>Sezioni 3D</h2>
-                    <iframe class="stretch" data-src="../pages/sections/sections.html"></iframe>
+                    <iframe class="stretch" data-src="../pages/sections2/index2.html"></iframe>
                 </section>
 				<section>
                     <h2>gax</h2>
@@ -230,6 +248,9 @@
                 hash: true,
                 history: true,
                 // autoSlide: 1000
+                //width: 960,
+                //height: 700,
+
                 width:1920,
                 height:1080,
                 plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]

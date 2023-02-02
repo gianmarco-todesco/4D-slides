@@ -23,7 +23,7 @@ function setup() {
 
 
     populateScene()
-    slide.axes = showWorldAxis(4, scene);
+    // slide.axes = showWorldAxis(4, scene);
     scene.registerBeforeRender(tick)
     scene.onKeyboardObservable.add(onKeyEvent);
     handlePointer()
@@ -237,6 +237,7 @@ function createPaper() {
     return pivot
 }
 
+/*
 function bar() {
     let v0 = slide.model.data.vertices[0].clone().normalize();
     let v1 = slide.model.data.vertices[1];
@@ -254,9 +255,9 @@ function bar() {
     // 
 
 }
+*/
 
-
-
+/*
 function foo() {
     let sc = 0.3;
     slide.model.vertices[0].scaling.set(sc,sc,sc);
@@ -271,13 +272,14 @@ function foo() {
     quaternion = BABYLON.Quaternion.FromEulerAngles(Math.PI/2,Math.PI/2,0).multiply(quaternion)
     slide.model.pivot.rotationQuaternion = quaternion;
     slide.model.pivot.position.y = 0;    
-
-
 }
+*/
+
 
 function test() {
-    slide.clipPlane = new BABYLON.Plane(0,-1,0,0);
-    setModel(PolyhedronData.p12);
+    slide.clipPlane = new BABYLON.Plane(0,1,0,0);
+    if(slide.startWithGike) setModel(PolyhedronData.pg20);
+    else setModel(PolyhedronData.p6);
 
     let section = slide.section = new PolyhedronSection('section',slide.scene);
     section.edge.material.diffuseColor.set(1,0,0);
@@ -290,7 +292,8 @@ function test() {
 function setModel(data) {
     let ph = slide.model = new Polyhedron('a',data,slide.scene);
     ph.facesMesh.material.clipPlane = slide.clipPlane;
-    ph.pivot.position.y = 1;
+    let r = ph.data.vertices[0].length() * ph.scaleFactor;
+    ph.pivot.position.y = -r;
 }
 
 function orientModel(q) {

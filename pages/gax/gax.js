@@ -150,8 +150,9 @@ function rotate(dx,dy) {
 
     slide.model.matrix = slide.model.matrix.multiply(matrix)
     slide.model.update()
-
 }
+
+
 // ============================================================================
 
 class PolychoronSimpleModel extends GeometricModel {

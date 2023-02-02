@@ -197,9 +197,10 @@ class GeometricModel {
 class Polyhedron extends GeometricModel {
     constructor(name, data, scene) {
         super(name,scene);
+        const scaleFactor = this.scaleFactor = 2;
         this.data = data;
         this.beginUpdate();
-        let pts = this.data.vertices.map(v => v.scale(2));
+        let pts = this.data.vertices.map(v => v.scale(scaleFactor));
         pts.forEach(v => this.addVertex(v,0.03));
         this.data.edges.forEach(([a,b]) => this.addEdge(pts[a],pts[b],0.02));
         this.data.faces.forEach((f) => this.addFace(f.map(i=>pts[i])));
