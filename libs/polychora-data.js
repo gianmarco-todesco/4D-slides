@@ -37,6 +37,22 @@ class PolychoronData {
             })
         })            
     }
+
+    getCellCenter(cellIndex) {
+        let cell = this.cells[cellIndex];
+        let flags = this.vertices.map(()=>false);
+        cell.forEach(faceIndex => {
+            this.faces[faceIndex].forEach(v => flags[v] = true);
+        });
+        let center = new BABYLON.Vector4(0,0,0,0);
+        let count = 0;
+        this.vertices.filter((v,i)=>flags[i]).forEach(v => {
+            center.addInPlace(v);
+            count++;
+        });
+        center.scaleInPlace(1/count);
+        return center;        
+    }
 }
 
 PolychoronData.p5 = new PolychoronData(

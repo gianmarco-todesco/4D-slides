@@ -1,5 +1,10 @@
 const slide = {
-    name: "Title"
+    name: "Title",
+    xwRotation : {
+        enabled: false,
+        angle: 0,
+        speed: 0
+    }
 }
 
 function setup() {
@@ -83,7 +88,8 @@ class PolychoronModel {
         this.vertices = [dot]
         for(let i = 1; i<data.vertices.length; i++) { 
             let inst = dot.createInstance(name+'-dot-inst-'+i)
-            this.vertices.push(inst)
+            this.vertices.push(inst);
+            inst.parent = pivot;
         }
         
         let edge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.1, height:1}, scene)
@@ -93,15 +99,18 @@ class PolychoronModel {
         this.edges = [edge]
         for(let i = 1; i<data.edges.length; i++) { 
             let inst = edge.createInstance(name+'-edge-inst-'+i)
-            this.edges.push(inst)
+            this.edges.push(inst);
+            inst.parent = pivot;
         }
 
     }
 
     update() {
-        let phi = performance.now() * 0.001
+        let phi = slide.xwRotation.angle; // performance.now() * 0.001
         let cs = Math.cos(phi), sn = Math.sin(phi)
 
+        const dist = 2;
+        const scaleFactor = 3;
         let vs = []
         this.data.vertices.forEach((p,i)=>{
             let x1 = p.x * cs - p.w * sn, 
@@ -111,7 +120,7 @@ class PolychoronModel {
 
 
             let pos = this.vertices[i].position
-            let k = 10/(x4+4)
+            let k = scaleFactor*dist/(x4+dist)
             pos.x = x1 * k
             pos.y = x2 * k
             pos.z = x3 * k
@@ -124,7 +133,15 @@ class PolychoronModel {
             placeCylinder(this.edges[i], pa,pb)
         })
 
+        const dt = slide.engine.getDeltaTime() * 0.001;
 
+        if(slide.xwRotation.enabled) {
+            slide.xwRotation.speed = Math.min(1,slide.xwRotation.speed + 1*dt);
+        } else {
+            slide.xwRotation.speed = Math.max(0,slide.xwRotation.speed - 1*dt);
+        }
+        slide.xwRotation.angle += slide.xwRotation.speed * dt;
+        this.pivot.rotation.y += 0.1* dt * (1-slide.xwRotation.speed);
     }
 }
 

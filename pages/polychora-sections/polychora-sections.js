@@ -52,12 +52,9 @@ function populateScene() {
 let stop = false
 
 function tick() {
-    /*
-    if(stop==false) {
-        slide.model.w0 = Math.sin(performance.now()*0.0001)
-        slide.model.update()    
-    } 
-    */   
+    if(slide.assetController) {
+        if(!slide.assetController.tick()) slide.assetController = null;
+    }
 }
 
 // ============================================================================
@@ -147,8 +144,35 @@ function getRotation(e1,e2,theta) {
         }
     }
     return matrix
-
 }
+
+function getRotationFromVectors(v1, v2, t) {
+    const e1 = v1.clone().normalize();
+    const dot = (a,b) => a.x*b.x+a.y*b.y+a.z*b.z+a.w*b.w;
+    let theta = Math.acos(dot(e1,v2.clone().normalize())) * t;
+    let cs = Math.cos(theta), sn = Math.sin(theta);
+    const e2 = v2.subtract(e1.scale(dot(e1,v2))).normalize();
+    const rot = (v) => {
+        let x = dot(v,e1);
+        let y = dot(v,e2);
+        let rest = v.subtract(e1.scale(x).add(e2.scale(y)));
+        return e1.scale(x*cs-y*sn).add(e2.scale(x*sn+y*cs)).add(rest);
+    }
+    const c1 = rot(new BABYLON.Vector4(1,0,0,0));
+    const c2 = rot(new BABYLON.Vector4(0,1,0,0));
+    const c3 = rot(new BABYLON.Vector4(0,0,1,0));
+    const c4 = rot(new BABYLON.Vector4(0,0,0,1));
+    const arr = [
+            c1.x,c2.x,c3.x,c4.x,
+            c1.y,c2.y,c3.y,c4.y,
+            c1.z,c2.z,c3.z,c4.z,
+            c1.w,c2.w,c3.w,c4.w,
+        ];
+    const matrix = BABYLON.Matrix.FromArray(arr);
+    console.log(matrix);
+    return matrix;
+}
+
 
 function onKeyEvent(kbInfo) {
     switch (kbInfo.type) {
@@ -165,6 +189,13 @@ function onKeyEvent(kbInfo) {
                 else if(key == 56) data = PolychoronData.p600
                 else break;
                 slide.model.setShape(data)
+            }
+            else if(kbInfo.event.key == "v") {
+                slide.assetController = new AssetController(slide.model);
+                slide.assetController.setVertex();
+            } else if (kbInfo.event.key == "c") {
+                slide.assetController = new AssetController(slide.model);
+                slide.assetController.setCell();
             }
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
@@ -367,4 +398,43 @@ class PolychoronSectionModel extends GeometricModel {
             }
         }).filter(p=>p!==undefined)
     } 
+}
+
+
+class AssetController {
+    constructor(model) {
+        this.model = model;
+        this.v2 = new BABYLON.Vector4(0,0,0,-1);
+        this.t = 1.0;
+    }
+    setTargetPoints(pts) {
+        const model = this.model;
+        this.startMatrix = model.matrix.clone();
+        this.t = 0;        
+        this.v1 = BABYLON.Vector4.Transform(model.matrix, pts[0]);
+        for(let i=1;i<pts.length;i++) {
+            let v = BABYLON.Vector4.Transform(model.matrix, pts[i]);
+            if(v.w<this.v1) { this.v1 = v; this.vIndex = i; }
+        }
+        return this.vIndex;        
+    }
+    setVertex() {
+        return this.setTargetPoints(this.model.data.vertices);
+    }
+    setCell() {
+        const data = this.model.data;
+        let pts = data.cells.map((c,i) => data.getCellCenter(i));
+        return this.setTargetPoints(pts);
+    }
+    setParam(t) {
+        this.t = t;
+        let mat = getRotationFromVectors(this.v1, this.v2, this.t);
+        this.model.matrix = mat.multiply(this.startMatrix);
+        this.model.update();        
+    }
+    tick() {
+        if(this.t >= 1.0) return false;
+        this.setParam(Math.min(1.0, this.t + 0.01));
+        return this.t<1.0;
+    }
 }
