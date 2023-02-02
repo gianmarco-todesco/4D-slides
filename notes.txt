@@ -1,3 +1,6 @@
+
+n.b. ci vuole un folder reveal (sotto gitignore) che contiene https://github.com/hakimel/reveal.js/archive/master.zip
+
 Conferenza a Brescia il 3 febbraio 2023
 
 TODO:
