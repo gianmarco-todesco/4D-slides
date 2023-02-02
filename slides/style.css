@@ -4,7 +4,7 @@
 }
 
 .reveal .reference {
-    text-align: right;
+    text-align: center;
     font-size:smaller;
     font-style: italic;
 }
@@ -23,3 +23,13 @@
     border:none;
     position:absolute;
 }
+
+.reveal iframe {
+    /* width:600px;
+    height:400px; */
+    border:solid 1px orange;
+}
+/*
+.reveal .quote {
+}
+*/

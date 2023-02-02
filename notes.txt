@@ -1,3 +1,24 @@
+Conferenza a Brescia il 3 febbraio 2023
+
+
+metodi:
+  nuova slide con tre bullet point: proiezioni, sviluppi e sezioni  
+
+
+
+
+sezioni:
+  sfera che passa dalla copertina di flatlandia
+  sezioni 3D (prima il cubo, poi altri poliedri, ma non il grand ico)
+  sezioni 4D 
+  granicosaedro
+  sezione 3D (grandico)
+  gax
+
+  un aggancio: i policora non si vedono benissimo. cerchiamo di capire meglio la struttura
+
+
+-----------------------
 titolo
 aristotele
 quarta dimensione Lagrange, Schlafli, Hinton

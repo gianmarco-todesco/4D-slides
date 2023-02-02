@@ -3,31 +3,31 @@
         <meta charset="utf-8" />
         <title>4D</title>
         <meta name="author" content="Gian Marco Todesco">
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/css/reveal.css">
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/css/theme/black.css">
+		<link rel="stylesheet" href="../reveal/dist/reset.css">
+		<link rel="stylesheet" href="../reveal/dist/reveal.css">
+        <link rel="stylesheet" href="../reveal/dist/theme/white.css">
         <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="../reveal/plugin/highlight/monokai.css">
+
         <link rel="stylesheet" href="style.css">
-        <style>
-            .reveal iframe {
-                /* width:600px;
-                height:400px; */
-                border:solid 1px orange;
-            }
-        </style>
 	</head>
 	<body>
 		<div class="reveal">
 			<div class="slides">
-                <section></section>
-				<section >
+				<section 
+                    data-background-iframe="../pages/title/title.html" 
+                    data-background-interactive>
                     <h1>Oltre l'ipercubo</h1>
-                    <iframe class="stretch" src="../pages/title/title.html"></iframe>
+                    <div class="stretch"></div>
+                    <!-- iframe class="stretch" src="../pages/title/title.html"></iframe -->
                     <p class="reference">Gian Marco Todesco - gianmarco.todesco@gmail.com</p>
                     <!-- data-background-iframe= -->
                 </section>
 				<section>
                     <h2>Aristotele</h2>
-                    <p class="quote">"A magnitude if divisible one way is a line, if two ways 
+                    <p class="quote" style="margin:200px 300px; text-align:justify">"A magnitude if divisible one way is a line, if two ways 
                         a surface, and if three a body. Beyond these there is no 
                         other magnitude, because <font color="magenta">the three dimensions are all that 
                             there are</font>, and that which is divisible in three directions is 
@@ -35,6 +35,11 @@
                     </p>
                     <p class="reference"><strong>De caelo</strong> Book 1 Chapter 1<br>Internet Archive</p>
                 </section>
+
+                <section>
+                    <iframe class="stretch" data-src="../pages/sequence2/index.html" style="border:none"></iframe>
+                </section> 
+
 				<section>
                     <p style="font-size:smaller;text-align: left;">1788 - Joseph-Louis Lagrange, <strong>Mécanique analytique</strong><br>
                     1852 - Ludwig Schläfli, <strong>Theorie der vielfachen Kontinuität</strong><br>
@@ -84,15 +89,18 @@
 				</section>
 				<section>
                     <img class="stretch" style="position:relative;left:-100px;" src="images/Dali_Crucifixion_hypercube.jpg">
-                    <div style="position:absolute;top:0;right:0;font-size:smaller;">
-                        Crucifixion<br>(Corpus Hypercubus)<br>
-                        <i>Salvador Dalí, 1954</i>
+                    <div style="position:absolute;top:0;right:0;">
+                        <h2>Crucifixion</h2>
+                        <h3>(Corpus Hypercubus)</h3>
+
+                        <p><i>Salvador Dalí, 1954</i></p>
+                        
                     </div>
                 </section>
-                <section>
+                <section >
                     <h2>Ipercubi dappertutto</h2>
-                    <div class="stretch photos" style="position:relative">
-                        <img src="images/interstellar.jpg" height="300hw" style="left:5vw;bottom:0vw">
+                    <div class="stretch photos" style="position:relative;">
+                        <img src="images/interstellar.jpg" height="90%" style="left:5vw;bottom:0vw">
                         <img src="images/pierelli.jpg" height="280hw" style="left:0vw;top:5vw">
                         <img src="images/hypercube-t-shirt.jpg" height="200hw" style="left:70vw;top:0vw">
                         <img src="images/bathsheba.jpg" height="200hw" style="left:50vw;top:3vw">
@@ -112,10 +120,7 @@
                     <h2>Video game</h2>
                     <img class="stretch" src="images/videogame.png">
                 </section>
-				<section>
-                    <h2>1, 2, 3, ...</h2>
-                    <iframe class="stretch" data-src="../pages/sequence2/index.html" style="background-color: white;"></iframe>
-                </section>
+				
 				<section>
                     <video controls class="stretch">
                         <source data-src="videos/homer3d.mp4" type="video/mp4">
@@ -215,14 +220,26 @@
                 </section>
 			</div>
 		</div>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.6.0/js/reveal.min.js"></script>
+        <script src="../reveal/dist/reveal.js"></script>
+        <script src="../reveal/plugin/notes/notes.js"></script>
+        <script src="../reveal/plugin/markdown/markdown.js"></script>
+        <script src="../reveal/plugin/highlight/highlight.js"></script>        
 		<script>
 			Reveal.initialize({
                 slideNumber: true,
                 hash: true,
                 history: true,
                 // autoSlide: 1000
-            });
+                width:1920,
+                height:1080,
+                plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
+            }).then(()=>{
+                console.log("qui")
+                Reveal.getCurrentSlide().querySelectorAll('iframe').forEach(iframe => {
+                    iframe.contentWindow.postMessage('slide:start');
+                });
+            })
+            
 		</script>
 	</body>
 </html>

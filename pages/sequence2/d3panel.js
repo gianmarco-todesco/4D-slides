@@ -19,22 +19,22 @@ class D3Panel {
         panel.appendChild(canvas);
         container.appendChild(panel);
         
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";        
+        canvas.style.width = "90%";
+        canvas.style.height = "90%";        
         canvas.addEventListener('wheel', evt => evt.preventDefault());
         let engine = this.engine = new BABYLON.Engine(canvas, true);
         engine.setHardwareScalingLevel(0.5);
         let scene = this.scene = new BABYLON.Scene(engine);
         let camera = this.camera = new BABYLON.ArcRotateCamera('cam', 
             Math.PI/2,Math.PI/2,
-            15, 
+            10, 
             new BABYLON.Vector3(0,0,0), 
             scene);
         // camera.attachControl(canvas,true);
         camera.wheelPrecision = 50;
         camera.lowerRadiusLimit = 3;
         camera.upperRadiusLimit = 13*2; 
-        camera.fov = 0.4;           
+        camera.fov = 0.8;           
 
         this.populateScene();
         this.update();
@@ -140,7 +140,7 @@ class D3Panel {
         
         shadowGenerator.useBlurExponentialShadowMap = true;
         shadowGenerator.useKernelBlur = true;
-        shadowGenerator.blurKernel = 128;
+        shadowGenerator.blurKernel = 64; // 128;
     
         ground.receiveShadows = true;
         

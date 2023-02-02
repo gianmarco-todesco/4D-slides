@@ -7,8 +7,8 @@ class D2Panel {
         panel.classList.add('d2-panel');
         let canvas = this.canvas = document.createElement('canvas');
         panel.appendChild(canvas);
-        canvas.style.width = "100%";
-        canvas.style.height = "100%";
+        canvas.style.width = "95%";
+        canvas.style.height = "95%";
         this.ctx = canvas.getContext('2d');   
         container.appendChild(panel);
         this.vertices = hypercube.vertices.map(v=>({x:0, y:0, idx:v.idx, hv:v}));

@@ -12,7 +12,7 @@ function setup() {
     let canvas = slide.canvas = document.getElementById("renderCanvas")
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
-
+    scene.clearColor.set(1,1,1,1);
 
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 10, 
@@ -152,6 +152,7 @@ function onKeyEvent(kbInfo) {
     switch (kbInfo.type) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             const key = kbInfo.event.keyCode
+            console.log(kbInfo.event);
             if(49<=key && key<=49+6) {
                 slide.model.pivot.dispose()
                 let data
@@ -168,6 +169,7 @@ function onKeyEvent(kbInfo) {
                 slide.model = new PolychoronModel('pc', data, slide.scene)
                 slide.model.update()                
             }
+            else slide.xwRotation.enabled = !slide.xwRotation.enabled;
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
             break;

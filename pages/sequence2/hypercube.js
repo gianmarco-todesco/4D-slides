@@ -82,7 +82,7 @@ class Hypercube {
     }
     
     tick(dt = 0.050) {
-        const transitionTime = 2.5; // seconds to change dimension
+        const transitionTime = 0.75; // 2.5; // seconds to change dimension
         const ds = dt / transitionTime;
         if(this._currentDim < this._targetDim) {
             this.currentDim = Math.min(this._targetDim, this._currentDim + ds);

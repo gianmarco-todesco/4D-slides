@@ -22,9 +22,23 @@ function setup() {
     let buttonsPanel = createButtonsPanel();
     container.appendChild(buttonsPanel);
 
-    d3Panel = new D3Panel(container, hypercube);
-    d2Panel = new D2Panel(container, hypercube);
+    let mainDiv = document.createElement('div');
+    mainDiv.classList.add('main-panel');
+    container.appendChild(mainDiv);
 
+
+    //d3Panel = document.createElement('div');
+    //d3Panel.classList.add('d3-panel');
+    //mainDiv.appendChild(d3Panel);
+    d3Panel = new D3Panel(mainDiv, hypercube);
+
+    //d2Panel = document.createElement('div');
+    //d2Panel.classList.add('d2-panel');
+    //mainDiv.appendChild(d2Panel);
+    d2Panel = new D2Panel(mainDiv, hypercube);
+
+    // new D3Panel(mainDiv, hypercube);
+    
     window.container = container;
     window.buttonsPanel  = buttonsPanel;
     window.d3Panel = d3Panel;
@@ -49,22 +63,25 @@ function cleanup() {
 }
 
 function addStyles() {
-    
     let style = document.createElement('style');
     style.innerHTML = `
         #animation-container {
             display:flex;
-            flex-direction:row;
+            flex-direction:column;
             background-color:white;
             border:none;
+            align-content:stretch;
         }
 
         .buttons-panel {
             display:flex;
-            flex-direction:column;
+            flex-direction:row;
+            flex: 0 0 auto;
             gap:30px;
             padding:10px;    
+            justify-content:center;
         }
+
         .buttons-panel button {
             border-radius:50%;
             width:50px;
@@ -91,32 +108,22 @@ function addStyles() {
             animation: pulse 1s infinite;
         }
 
-        .d3-panel {
-            flex:1;            
+        
+        .main-panel {
+            flex-grow:1;
+            display:grid;
+            grid-auto-columns: 1fr;
+            grid-auto-flow: column;
         }
-        .d3-panel canvas {
-            outline:none;
+
+
+        .d3-panel {            
         }
         .d2-panel {
-            flex:1;
+            
         }
-
-        @keyframes pulse {
-            0% {
-                border-color:red;
-            }
-        
-            50% {
-                border-color:transparent;
-            }
-        
-            100% {
-                border-color:red;
-            }
-        }
-
     `;
-    document.head.appendChild(style);
+    document.head.appendChild(style);    
 }
 
 function createButtonsPanel() {
