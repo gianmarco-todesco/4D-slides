@@ -52,7 +52,7 @@ function placeCylinder(cylinder, vStart, vEnd, r) {
 }
 
 class GeometricModel {
-    constructor(name, scene) {
+    constructor(name, scene, colorsEnabled = false) {
         this.name = name
         this.scene = scene
         let pivot = this.pivot = new BABYLON.Mesh(name+"-pivot", scene)
@@ -79,12 +79,13 @@ class GeometricModel {
         mat.backFaceCulling = false
         mat.diffuseColor.set(0.6,0.8,0.2)
         // mat.alpha = 0.5
+        this.colorsEnabled = colorsEnabled;
     }
 
     beginUpdate() {
         this.usedVertices = 0
         this.usedEdges = 0
-        this.faces = { positions:[], indices:[], vCount:0, fCount:0 }
+        this.faces = { positions:[], indices:[], colors:[], vCount:0, fCount:0 }
     }
     endUpdate() {
         this.dot.visibility = this.usedVertices == 0 ? 0 : 1
@@ -103,6 +104,9 @@ class GeometricModel {
             var vertexData = new BABYLON.VertexData();
             vertexData.positions = this.faces.positions
             vertexData.indices = this.faces.indices
+            if(this.colorsEnabled) {
+                vertexData.colors = this.faces.colors;
+            }
             vertexData.applyToMesh(this.facesMesh);
             this.facesMesh.visibility = 1
         }
@@ -148,12 +152,16 @@ class GeometricModel {
         placeCylinder(this.edges[i], pa, pb, r)
         return i
     }
-    addFace(pts) {
+    addFace(pts, color = null) {
         const m = pts.length
         const k = this.faces.vCount
-        const {positions, indices} = this.faces
+        const {positions, indices, colors} = this.faces
         pts.forEach(p => { positions.push(p.x,p.y,p.z) })
         for(let i=2; i<m; i++) { indices.push(k, k+i-1, k+i) }
+        if(this.colorsEnabled) {
+            if(!color) color = [1,1,1,1];
+            for(let i=0;i<m;i++) colors.push(...color);
+        }
         this.faces.vCount += m
         this.faces.fCount ++
     }

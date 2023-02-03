@@ -1,5 +1,14 @@
 Conferenza a Brescia il 3 febbraio 2023
 
+TODO:
+sezioni 3d: possibilità di nascondere il poliedro
+gax: orientare secondo le facce
+120celle: piccolo bachetto
+
+DONE:
+sezioni 4d: colori diversi per le facce
+sfera: aggiungere il punto luminoso in cima alla sfera
+
 
 metodi:
   nuova slide con tre bullet point: proiezioni, sviluppi e sezioni  

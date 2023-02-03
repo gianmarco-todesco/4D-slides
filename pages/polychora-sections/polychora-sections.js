@@ -210,7 +210,7 @@ class PolychoronSimpleModel extends GeometricModel {
     constructor(data) {
         super()
         this.data = data
-        this.update()
+        this.update();
     }
     project(p4) {
         const k = 10.0/(4.0 + p4.w)
@@ -222,7 +222,7 @@ class PolychoronSimpleModel extends GeometricModel {
         this.beginUpdate()
         pts.forEach(p=>me.addVertex(p,0.1))
         this.data.edges.forEach(([a,b]) => {me.addEdge(pts[a],pts[b],0.06)})
-        this.endUpdate()
+        this.endUpdate();
     }
 }
 
@@ -237,14 +237,14 @@ BABYLON.Vector4.Transform = function(mat, v4) {
 
 class PolychoronSectionModel extends GeometricModel {
     constructor(name, data, scene) {
-        super(name,scene)
+        super(name,scene,true); // colorsEnabled = true
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
         this.w0 = 0.
 
         this.edge.material.diffuseColor.set(0.3,0.6,0.6)
         this.dot.material.diffuseColor.set(0.3,0.6,0.6)
-        
+        this.facesMesh.material.diffuseColor.set(1,1,1,1);
 
         let theta = Math.PI*0.25
         let csTheta = Math.cos(theta)
@@ -290,13 +290,26 @@ class PolychoronSectionModel extends GeometricModel {
         this.update()
     }
 
+    setCellColors() {
+        let ws = this.data.cells.map((c,i) => 
+            BABYLON.Vector4.Transform(this.matrix, this.data.getCellCenter(i)).w);
+        let wmin = ws[0], wmax = ws[0];
+        for(let i=1;i<ws.length;i++) {
+            let w = ws[i];
+            wmin = Math.min(wmin,w);
+            wmax = Math.max(wmax,w);
+        }
+        this.cellColors = ws.map(w=>HSVtoRGB((2/3)*(w-wmin)/(wmax-wmin),1,1))
+    }
+
     update() {
         const me = this
         const mat = this.matrix
         
         const Transform = BABYLON.Vector4.Transform
         const pts4 = this.data.vertices.map(p=>Transform(mat,p))
-        let w0 = this.adjustw(this.w0, pts4)
+        let w0 = this.adjustw(this.w0, pts4);
+        this.setCellColors();
         
         // compute edge points : intersections along edges. edgePoints = [(a,b,p),...]
         let edgePoints = this.computeEdgeIntersections(w0, pts4)
@@ -336,7 +349,7 @@ class PolychoronSectionModel extends GeometricModel {
         })
 
         // add faces
-        this.data.cells.forEach(cellFaces => {
+        this.data.cells.forEach((cellFaces,cellIdx) => {
             const links = {}
             let v
             cellFaces.forEach(faceIndex => {
@@ -357,8 +370,10 @@ class PolychoronSectionModel extends GeometricModel {
                     let v2 = links[v1][0]==v ? links[v1][1] : links[v1][0]
                     v=v1; v1=v2
                 }
-                if(facePts.length>=3) 
-                    me.addFace(facePts)
+                if(facePts.length>=3) {
+                    me.addFace(facePts, this.cellColors[cellIdx])
+
+                }
             }
         })
         

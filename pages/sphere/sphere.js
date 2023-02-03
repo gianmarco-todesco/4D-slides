@@ -152,6 +152,7 @@ class EmptyStep {
         md.sphereShell.hide()
         md.floor.hide()
         md.polygonsManager.showNothing(); 
+        md.lightPoint.isVisible = false;
     }
     cleanup() {
         const md = slide.model
@@ -168,6 +169,7 @@ class ParallelsStep {
         const md = slide.model
         md.sphereShell.addParallels(10,0.02)
         md.sphereShell.show()        
+        md.lightPoint.isVisible = false;
     } 
     cleanup() {
         const md = slide.model
@@ -183,11 +185,13 @@ class ParallelsWithShadowStep {
         md.sphereShell.addParallels(10,0.02)
         md.sphereShell.show()        
         md.floor.show()
+        md.lightPoint.isVisible = true;
     }
     cleanup() {
         const md = slide.model
         md.sphereShell.hide()        
         md.floor.hide()
+        md.lightPoint.isVisible = false
     }
     onPointerDown(pointerInfo) { 
         let pickedMesh = pointerInfo.pickInfo.pickedMesh
@@ -256,11 +260,14 @@ class PolyhedronWithShadowStep {
         md.sphereShell.addPolyhedron(PolyhedronData.p6)
         md.sphereShell.show()        
         md.floor.show()
+        md.lightPoint.isVisible = true;
+
     }
     cleanup() {
         const md = slide.model
         md.sphereShell.hide()        
         md.floor.hide()
+        md.lightPoint.isVisible = false;
     }
     onKeyDown(e) {
         const md = slide.model
@@ -334,7 +341,20 @@ class SphereModel {
         this.floor.rtt.renderList.push(this.sphereShell.mesh)
         this.floor.hide()
 
-        this.polygonsManager = new PolygonsManager()       
+        this.polygonsManager = new PolygonsManager();
+        
+        const gl = new BABYLON.GlowLayer("glow", scene, {
+            mainTextureFixedSize: 1024,
+            blurKernelSize: 128,
+          });
+        gl.intensity = 5.0;
+
+        this.lightPoint = BABYLON.MeshBuilder.CreateSphere('a', { diameter:0.1}, scene);
+        this.lightPoint.position.y = 2.5;
+        this.lightPoint.material = new BABYLON.StandardMaterial('amat', scene);
+        this.lightPoint.material.emissiveColor.set(1,1,0,1);
+        gl.addIncludedOnlyMesh(this.lightPoint);
+        this.lightPoint.isVisible = false;
     }
 
     /*
