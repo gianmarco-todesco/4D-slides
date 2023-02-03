@@ -10,7 +10,7 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        1.738, 1.851, 10, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -186,11 +186,13 @@ BABYLON.Vector4.Transform = function(mat, v4) {
 
 class PolychoronSectionModel extends GeometricModel {
     constructor(name, data, scene) {
-        super(name,scene)
+        super(name,scene, true) // colorsEnabled = true
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
         this.w0 = -4.88
-
+        this.facesMesh.material.diffuseColor.set(1,1,1,1);
+        this.facesMesh.material.specularColor.set(0.7,0.7,0.7);
+        /*
         let theta = Math.PI*0.25
         let csTheta = Math.cos(theta)
         let snTheta = Math.sin(theta)
@@ -221,11 +223,26 @@ class PolychoronSectionModel extends GeometricModel {
             0,0,snTheta,csTheta
             ]
         this.matrix = this.matrix.multiply(BABYLON.Matrix.FromArray(arr)) 
-
+        */
 
         this.update()
     }
+
+    setCellColors() {
+        let ws = this.data.cells.map((c,i) => 
+            BABYLON.Vector4.Transform(this.matrix, this.data.getCellCenter(i)).w);
+        let wmin = ws[0], wmax = ws[0];
+        for(let i=1;i<ws.length;i++) {
+            let w = ws[i];
+            wmin = Math.min(wmin,w);
+            wmax = Math.max(wmax,w);
+        }
+        this.cellColors = ws.map(w=>HSVtoRGB((2/3)*(w-wmin)/(wmax-wmin),0.75,0.8))
+    }
+
+
     update() {
+        this.setCellColors();
         const me = this
         const mat = this.matrix
         
@@ -270,7 +287,7 @@ class PolychoronSectionModel extends GeometricModel {
         })
 
         // add faces
-        this.data.cells.forEach(cellFaces => {
+        this.data.cells.forEach((cellFaces, cellIndex) => {
             const links = {}
             let v
             cellFaces.forEach(faceIndex => {
@@ -291,8 +308,9 @@ class PolychoronSectionModel extends GeometricModel {
                     let v2 = links[v1][0]==v ? links[v1][1] : links[v1][0]
                     v=v1; v1=v2
                 }
-                if(facePts.length>=3) 
-                    me.addFace(facePts)
+                if(facePts.length>=3) {
+                    me.addFace(facePts, this.cellColors[cellIndex])
+                }
             }
         })
         

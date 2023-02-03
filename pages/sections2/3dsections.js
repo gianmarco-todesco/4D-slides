@@ -138,6 +138,10 @@ function onKeyEvent(kbInfo) {
             else if(kbInfo.event.key == "e") 
                 orientModel(slide.model.data.getEdgeOrientation(0));
             
+            else if(kbInfo.event.key == "h") {
+                if(slide.model.facesMesh.isVisible) hideModel();
+                else showModel();
+            }
 
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
@@ -303,3 +307,9 @@ function orientModel(q) {
         BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT);
 }
 
+function hideModel() {
+    slide.model.pivot.getChildren().forEach(itm => itm.isVisible = false);
+}
+function showModel() {
+    slide.model.pivot.getChildren().forEach(itm => itm.isVisible = true);
+}
