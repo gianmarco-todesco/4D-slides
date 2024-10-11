@@ -8,7 +8,8 @@ function setup() {
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
     // scene.clearColor.set(1,1,1)
-
+    scene.ambientColor.set(10,10,10);
+    
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         -Math.PI / 2, 0.0, 8, 
         new BABYLON.Vector3(0,0,0), scene)
@@ -58,8 +59,8 @@ function populateScene() {
 class YendredModel {
     constructor(scene) {
         this.scene = scene
-        const phPosition = new BABYLON.Vector3(2,3,2)
-        this.rayOrigin = new BABYLON.Vector3(2,15,2)
+        const phPosition = new BABYLON.Vector3(2.2,3,2)
+        this.rayOrigin = new BABYLON.Vector3(2.2,11,2) // 15
         this.floorColor = new BABYLON.Color3(0.6,0.6,0.6)
 
         let ph = this.ph = new Polyhedron(PolyhedronData.p12, scene)
@@ -77,6 +78,7 @@ class YendredModel {
 
         this.step = 0
         this.showFace = false
+        this.rotating = true;
     }
 
     onKeyDown(e) {
@@ -84,6 +86,9 @@ class YendredModel {
         if(key=='b') {
             if(this.planiverse.isVisible) this.hideBook();
             else this.showBook();
+        }
+        else if(key=='r') {
+            this.rotating = !this.rotating;
         }
         else if(key=='1') {
             if(this.planiverse.isVisible) this.hideBook();
@@ -102,7 +107,7 @@ class YendredModel {
         } else if(key=='0') { 
             this.showPolyhedron(false)
             this.lineSystem.isVisible = false
-        } else if(key=='r') {
+        } else if(key=='h') {
             this.lineSystem.isVisible = !this.lineSystem.isVisible
         } else if(key=='f') {
             this.showFace = !this.showFace
@@ -143,16 +148,20 @@ class YendredModel {
         const yendred = this.yendred = BABYLON.MeshBuilder.CreateGround('yendred', { width:6, height:6 }, scene)
         let mat = yendred.material = new BABYLON.StandardMaterial('yendred-mat', scene)
         mat.backFaceCulling = false
-        mat.diffuseTexture = new BABYLON.Texture('images/yendred4.png')
+        mat.ambientTexture = new BABYLON.Texture('images/yendred4.png')
         mat.specularColor.set(0,0,0)
-        mat.diffuseColor.copyFrom(this.floorColor)
+        mat.ambientColor.copyFrom(this.floorColor)
+        mat.diffuseColor.set(0,0,0);
+        //mat.diffuseColor.copyFrom(this.floorColor)
+
         yendred.position.set(-3,0,-0.2)
 
         const floor = this.floor = BABYLON.MeshBuilder.CreateGround('floor', { width:12*3, height:12 }, scene)
         mat = floor.material = new BABYLON.StandardMaterial('floor-mat', scene)
         mat.backFaceCulling = false
         mat.specularColor.set(0,0,0)
-        mat.diffuseColor.copyFrom(this.floorColor)
+        mat.diffuseColor.set(0,0,0);
+        mat.ambientColor.copyFrom(this.floorColor)
         floor.position.set(0,-0.01,0)
 
         let ar = 243/369
@@ -192,7 +201,7 @@ class YendredModel {
     }
 
     tick() {
-        slide.model.ph.pivot.rotation.z = performance.now() * 0.001
+        if(this.rotating) slide.model.ph.pivot.rotation.z += slide.engine.getDeltaTime() * 0.001; // performance.now() * 0.001
         this.updateRays()
 
     }
@@ -242,6 +251,7 @@ class YendredModel {
         rttMaterial2.emissiveColor.set(0.7,0.7,0.3)
         rttMaterial2.ambientColor.set(1,0,0)
         rttMaterial2.backFaceCulling = false
+        rttMaterial2.alpha = 0.5;
 
         let bgColor = new BABYLON.Color3()
     
@@ -273,7 +283,8 @@ class YendredModel {
         rttPaper.position.set(this.rayOrigin.x,0.001,this.rayOrigin.z)
         let mat = rttPaper.material = new BABYLON.StandardMaterial('paper-mat', scene)
         mat.backFaceCulling = false
-        mat.diffuseColor.copyFrom(this.floorColor)
+        mat.diffuseColor.set(0,0,0);
+        mat.ambientColor.copyFrom(this.floorColor)
         mat.specularColor.set(0,0,0)    
         mat.diffuseTexture = rtt
 

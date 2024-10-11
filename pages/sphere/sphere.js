@@ -223,7 +223,7 @@ class PolygonsStep {
     }
     onPointerDrag(pointerInfo, dx, dy) {
         const pm = slide.model.polygonsManager
-        let size = Math.max(0.1, Math.min(1.8, pm.polygonSize - dy*0.005))
+        let size = Math.max(0.1, Math.min(0.9554, pm.polygonSize - dy*0.005))
         pm.setSize(size)
     }
 }

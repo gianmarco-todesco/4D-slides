@@ -11,6 +11,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true, {deterministicLockstep: true})
     const scene = slide.scene = new BABYLON.Scene(engine)
+    scene.ambientColor.set(1,1,1)
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         1.03, 1.45, 15, 
         new BABYLON.Vector3(0,0,0), scene)
@@ -171,7 +172,9 @@ function createPaper() {
     const plane = BABYLON.MeshBuilder.CreateGround("paper-ground", {
         width: w, height: h}, scene)
     const planeMat = plane.material = new BABYLON.StandardMaterial('paper-ground-mat', scene)
-    planeMat.diffuseColor.set(0.5,0.7,0.9)
+    planeMat.ambientColor.set(0.5,0.7,0.9)
+    planeMat.diffuseColor.set(0.5*0.1,0.7*0.1,0.9*0.1)
+    planeMat.specularColor.set(0.0,0.0,0.0)
     planeMat.backFaceCulling = false
     planeMat.alpha = 0.5
     plane.parent = pivot

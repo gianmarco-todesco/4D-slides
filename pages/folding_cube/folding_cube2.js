@@ -120,33 +120,38 @@ function handlePointer() {
     }
 }
 
+function setPolygon(idx) {
+    const options = {}
+    if(idx == 1) {
+        options.sideCount = 4
+        options.sequence = [[0,0],[1,2],[0,1],[0,2],[0,3]]
+    } else if(idx == 2) {
+        options.sideCount = 4
+        options.sequence = [[0,0],[0,2],[1,2],[2,3],[1,1]]
+    } else if(idx == 3) {
+        options.sideCount = 5
+        options.sequence = [
+            [0,0],[0,1],[0,2],[0,3],[0,4],
+            [1,2],[6,0],[7,1],[7,2],[7,3],[7,4]
+            ]
+    } else return;
+    if(slide.model) { slide.model.dispose(); slide.model=null; }
+    slide.model = new FoldingPolygon('ph', options, slide.scene)
+}
 
 function onKeyEvent(kbInfo) {
     switch (kbInfo.type) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
-            console.log("KEY DOWN: ", kbInfo.event.key);
-            const key = kbInfo.event.keyCode
-            if(slide.model) { slide.model.dispose(); slide.model=null; }
-            const options = {}
-
-            if(key==49) {
-                options.sideCount = 4
-                options.sequence = [[0,0],[1,2],[0,1],[0,2],[0,3]]
-            } else if(key==50) {
-                options.sideCount = 4
-                options.sequence = [[0,0],[0,2],[1,2],[2,3],[1,1]]
-
-            } else if(key==51) {
-                options.sideCount = 5
-                options.sequence = [
-                    [0,0],[0,1],[0,2],[0,3],[0,4],
-                    [1,2],[6,0],[7,1],[7,2],[7,3],[7,4]
-                    ]
+            let key = kbInfo.event.key;
+            if(key=='1') setPolygon(1);
+            else if(key=='2') setPolygon(2);
+            else if(key=='3') setPolygon(3);
+            else if(key=='h') {
+                const mat = slide.model.mesh.material;
+                mat.disableColorWrite = !mat.disableColorWrite;
             }
-            slide.model = new FoldingPolygon('ph', options, slide.scene)
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
-            console.log("KEY UP: ", kbInfo.event.keyCode);
             break;
     }
 }
@@ -163,7 +168,7 @@ class FoldingPolygon {
 
         const mat = mesh.material = new BABYLON.StandardMaterial(name+'-mat',scene)
         mat.diffuseColor.set(0.3,0.5,0.7)
-        mat.specularColor.set(0.3,0.3,0.3)
+        mat.specularColor.set(0.2,0.2,0.2)
 
         sequence.forEach(([parent, edge]) => {
             this._addFace(parent, edge)
