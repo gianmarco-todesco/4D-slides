@@ -246,10 +246,10 @@ class YendredModel {
         rttMaterial.backFaceCulling = false
 
         let rttMaterial2 = new BABYLON.StandardMaterial('rtt-mat2', scene)
-        rttMaterial2.diffuseColor.set(1,0,0)
+        rttMaterial2.diffuseColor.set(0,0,0)
         rttMaterial2.specularColor.set(0,0,0)
-        rttMaterial2.emissiveColor.set(0.7,0.7,0.3)
-        rttMaterial2.ambientColor.set(1,0,0)
+        rttMaterial2.emissiveColor.set(0.6,0.8,0.2)
+        rttMaterial2.ambientColor.set(0,0,0)
         rttMaterial2.backFaceCulling = false
         rttMaterial2.alpha = 0.5;
 
