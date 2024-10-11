@@ -195,7 +195,7 @@ class D3Panel {
                 BABYLON.Quaternion.SlerpToRef(
                     this.pivot.rotationQuaternion, 
                     identity,
-                    0.01,
+                    0.1,
                     this.pivot.rotationQuaternion
                 );
             }

@@ -110,7 +110,7 @@ function handlePointer() {
         let y = pointerInfo.event.offsetY
         let dy = y-oldy
         oldy = y
-        slide.model.param = slide.model.param + dy*0.002
+        slide.model.param = slide.model.param + dy*0.006
     }
 }
 
@@ -126,7 +126,7 @@ function onKeyEvent(kbInfo) {
             }
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
-            console.log("KEY UP: ", kbInfo.event.keyCode);
+            // console.log("KEY UP: ", kbInfo.event.keyCode);
             break;
     }
 }
@@ -134,7 +134,8 @@ function onKeyEvent(kbInfo) {
     
 class Model {
     constructor(scene) {
-        this.setShape(1)
+        this._parameters = [0];
+        this.setShape(2)
         
     }
 
@@ -173,19 +174,26 @@ class Model {
         const faces = this.faces = [pentagon]
         for(let i=1; i<12; i++) faces.push(pentagon.createInstance('f-'+i))
         this.placeFaces(PolyhedronData.p12)
-        this._param = 0    
+        this._ctrlParam = this._param = 0    
+        this._parameters = [0,-1.8]
     }
     setIco() {
         const triangle = createTickPolygon('triangle', {m:3, r:1}, slide.scene)
         const faces = this.faces = [triangle]
         for(let i=1; i<20; i++) faces.push(triangle.createInstance('f-'+i))
         this.placeFaces(PolyhedronData.p20)
-        this._param = 0    
+        this._ctrlParam = this._param = 0    
+        this._parameters = [0, -1.5]
     }
 
-    get param() { return this._param; }
+    get param() { return this._ctrlParam; }
     set param(v) {
-        this._param = v
+        this._ctrlParam = v
+        this._param = v;
+        const eps = 0.02;
+        const ds = this._parameters.map(z=>Math.abs(z-v));
+        let j = ds.indexOf(Math.min(...ds));
+        if(ds[j]<eps) v = this._param = this._parameters[j];
         const translateMatrix = BABYLON.Matrix.Translation(0,v,0)
         if(this.faces) {
             this.faces.forEach(face => {

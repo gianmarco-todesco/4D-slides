@@ -98,13 +98,7 @@ function handlePointer() {
             const RotX = BABYLON.Matrix.RotationX
             const RotZ = BABYLON.Matrix.RotationZ
            
-            /*
-            slide.model.matrix = 
-                slide.model.matrix
-                .multiply(RotZ(dx*0.01))
-                .multiply(RotX(dy*0.01))                
-            slide.model.update()
-            */
+            
             if(!slide.model.pivot.rotationQuaternion) slide.model.pivot.rotationQuaternion = new BABYLON.Quaternion();
             slide.model.pivot.rotationQuaternion = 
                 BABYLON.Quaternion.FromEulerAngles(dx*0.01,0,dy*0.01).multiply(slide.model.pivot.rotationQuaternion  );
@@ -151,44 +145,19 @@ function onKeyEvent(kbInfo) {
 }
 
 
-        /*
-        var glowLayer = this.glowLayer = new BABYLON.GlowLayer("glow", scene, { 
-            mainTextureFixedSize: 256,
-            blurKernelSize: 64
-        });
-        glowLayer.intensity = 2.0
-        */
+       
 
 function populateScene() {
 
     const paper = createPaper()
     test();
-    /*
-    slide.tick = scene.registerBeforeRender(()=>{
-        if(slide.targetOrientation) {
-
-            let q = BABYLON.Quaternion.Lerp(slide.startOrientation, )
-        }
-    })
-    */
-
-    // showWorldAxis(3, slide.scene)
+    
 
 }
 
 
 function tick() {
-    /*
-    const psi = performance.now()*0.0001
-    if(slide.model != null) {
-        slide.model.matrix = 
-            BABYLON.Matrix.RotationX(0.3).multiply(
-                BABYLON.Matrix.RotationZ(psi))
-        slide.model.update()
-    }
-    */
-
-    // sphere.position.x = Math.cos(performance.now()*0.001) * 2
+   
 }
 
 
@@ -241,44 +210,6 @@ function createPaper() {
     return pivot
 }
 
-/*
-function bar() {
-    let v0 = slide.model.data.vertices[0].clone().normalize();
-    let v1 = slide.model.data.vertices[1];
-    v1 = v1.subtract(v0.scale(BABYLON.Vector3.Dot(v0,v1))).normalize();
-    let quaternion = BABYLON.Quaternion.FromLookDirectionLH(v0,v1).invert();
-    // quaternion.multiplyInPlace(BABYLON.Quaternion.FromEulerAngles(Math.PI/2,0,0));
-    // quaternion = BABYLON.Quaternion.FromEulerAngles(Math.PI/2,0,0).multiply(quaternion);
-    quaternion = BABYLON.Quaternion.FromEulerAngles(Math.PI/2,Math.PI/2,0).multiply(quaternion)
-
-    return quaternion;
-
-
-    // BABYLON.Animation.CreateAndStartAnimation('a', slide.model.pivot, "rotationQuaternion", 60, 60, new BABYLON.Quaternion(), bar());
-
-    // 
-
-}
-*/
-
-/*
-function foo() {
-    let sc = 0.3;
-    slide.model.vertices[0].scaling.set(sc,sc,sc);
-    sc = 0.15;
-    slide.model.vertices[1].scaling.set(sc,sc,sc);
-    let v0 = slide.model.data.vertices[0].clone().normalize();
-    let v1 = slide.model.data.vertices[1];
-    v1 = v1.subtract(v0.scale(BABYLON.Vector3.Dot(v0,v1))).normalize();
-    let quaternion = BABYLON.Quaternion.FromLookDirectionLH(v0,v1).invert();
-    // quaternion.multiplyInPlace(BABYLON.Quaternion.FromEulerAngles(Math.PI/2,0,0));
-    // quaternion = BABYLON.Quaternion.FromEulerAngles(Math.PI/2,0,0).multiply(quaternion);
-    quaternion = BABYLON.Quaternion.FromEulerAngles(Math.PI/2,Math.PI/2,0).multiply(quaternion)
-    slide.model.pivot.rotationQuaternion = quaternion;
-    slide.model.pivot.position.y = 0;    
-}
-*/
-
 
 function test() {
     slide.clipPlane = new BABYLON.Plane(0,1,0,0);
@@ -287,6 +218,8 @@ function test() {
 
     let section = slide.section = new PolyhedronSection('section',slide.scene);
     section.edge.material.diffuseColor.set(1,0,0);
+    section.edge.material.specularColor.set(0,0,0);
+    
 
     slide.scene.onAfterStepObservable.add(function (theScene) { 
         if(slide.model && slide.section) slide.section.update(slide.model, slide.clipPlane);

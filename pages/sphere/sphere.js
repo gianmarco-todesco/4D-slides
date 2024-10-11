@@ -111,8 +111,8 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             // console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
-            if(kbInfo.event.key == "a") slide.prev()
-            else if(kbInfo.event.key == "s") slide.next()
+            if(kbInfo.event.key == "z") slide.prev()
+            else if(kbInfo.event.key == "x") slide.next()
             else if(slide.step && slide.step.onKeyDown) {
                 slide.step.onKeyDown(kbInfo.event)
             }

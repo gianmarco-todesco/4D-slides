@@ -43,8 +43,10 @@ function placeCylinder(cylinder, vStart, vEnd, r) {
     const delta = vEnd.subtract(vStart).scale(1.0/distance)
     const up = new BABYLON.Vector3(0, 1, 0)
     let angle = Math.acos(BABYLON.Vector3.Dot(delta, up));
-    let quaternion
-    if(Math.abs(angle) > 0.00001) {
+    let quaternion;
+    let absAngle = Math.abs(angle);
+    const eps = 0.00001;
+    if(eps < absAngle && absAngle < Math.PI - eps) {
         const axis = BABYLON.Vector3.Cross( up, delta).normalize()
         quaternion = BABYLON.Quaternion.RotationAxis(axis, angle);    
     } else quaternion = BABYLON.Quaternion.Identity()

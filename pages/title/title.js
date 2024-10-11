@@ -1,10 +1,6 @@
 const slide = {
     name: "Title",
-    xwRotation : {
-        enabled: false,
-        angle: 0,
-        speed: 0
-    }
+    
 }
 
 function setup() {
@@ -103,10 +99,60 @@ class PolychoronModel {
             inst.parent = pivot;
         }
 
+        this.xwRotation = {
+            status: 0,
+            angle: 0,
+            speed: 0,
+            angle0: 0,
+            t0: 0,
+            duration:10000.0,
+            percent: 0
+        }
+    }
+
+    startXwRotation() {
+        const xw = this.xwRotation;
+        xw.status = 1;
+    }
+    stopXwRotation() {
+        const xw = this.xwRotation;
+        if(xw.status == 1)
+            xw.status = 2;
+    }
+
+    stepXw(dt) {
+        const maxSpeed = 1.0;
+        const xw = this.xwRotation;
+        if(xw.status == 1) {
+            xw.speed = Math.min(maxSpeed, xw.speed + dt);
+            xw.percent = xw.speed/maxSpeed;
+            xw.angle += xw.speed * dt;
+        } else if(xw.status == 2) {
+            xw.speed = Math.max(0.0, xw.speed - dt);
+            xw.angle += xw.speed * dt;
+            xw.percent = xw.speed/maxSpeed;
+            if(xw.speed == 0.0) {
+                xw.status == 3;
+                let a = xw.angle / (2*Math.PI);
+                xw.angle = 2*Math.PI*(a-Math.floor(a));
+                xw.t0 = performance.now();
+                xw.angle0 = xw.angle;
+                xw.duration = 1000.0;
+                xw.status = 3;
+            }
+        } else if(xw.status == 3) {
+            let t = (performance.now() - xw.t0)/xw.duration;
+            if(t>1) {
+                xw.angle = 0;
+                xw.status = 0;
+            } else {
+                xw.angle = xw.angle0 * (1+Math.cos(Math.PI*t))/2;
+            }
+        }
     }
 
     update() {
-        let phi = slide.xwRotation.angle; // performance.now() * 0.001
+        let phi = this.xwRotation.angle; // performance.now() * 0.001
         let cs = Math.cos(phi), sn = Math.sin(phi)
 
         const dist = 2;
@@ -134,14 +180,9 @@ class PolychoronModel {
         })
 
         const dt = slide.engine.getDeltaTime() * 0.001;
-
-        if(slide.xwRotation.enabled) {
-            slide.xwRotation.speed = Math.min(1,slide.xwRotation.speed + 1*dt);
-        } else {
-            slide.xwRotation.speed = Math.max(0,slide.xwRotation.speed - 1*dt);
-        }
-        slide.xwRotation.angle += slide.xwRotation.speed * dt;
-        this.pivot.rotation.y += 0.1* dt * (1-slide.xwRotation.speed);
+        this.stepXw(dt);
+        this.pivot.rotation.y += 0.1* dt * (1-this.xwRotation.percent);
+        
     }
 }
 
@@ -149,27 +190,34 @@ class PolychoronModel {
 
 
 function onKeyEvent(kbInfo) {
+    const model = slide.model;
     switch (kbInfo.type) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             const key = kbInfo.event.keyCode
             console.log(kbInfo.event);
-            if(49<=key && key<=49+6) {
-                slide.model.pivot.dispose()
+            if("123456".indexOf(key)>=0) {
+                model.pivot.dispose()
                 let data
                 switch(key)
                 {
-                    case 49: data = PolychoronData.p5; break
-                    case 50: data = PolychoronData.p8; break
-                    case 51: data = PolychoronData.p16; break
-                    case 52: data = PolychoronData.p24; break
-                    case 53: data = PolychoronData.p120; break
-                    case 54: data = PolychoronData.p600; break
-                    default: data = PolychoronData.p5; break
+                    case '1': data = PolychoronData.p5; break
+                    case '2': data = PolychoronData.p8; break
+                    case '3': data = PolychoronData.p16; break
+                    case '4': data = PolychoronData.p24; break
+                    case '5': data = PolychoronData.p120; break
+                    case '6': data = PolychoronData.p600; break
                 }
-                slide.model = new PolychoronModel('pc', data, slide.scene)
-                slide.model.update()                
+                model = new PolychoronModel('pc', data, slide.scene)
+                model.update()                
             }
-            else slide.xwRotation.enabled = !slide.xwRotation.enabled;
+            else if(kbInfo.event.key=='r') {
+
+                if(model.xwRotation.status == 0)
+                    model.startXwRotation();
+                else if(model.xwRotation.status == 1)
+                    model.stopXwRotation();
+
+            } else console.log(key);
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
             break;

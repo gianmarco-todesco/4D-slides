@@ -7,7 +7,7 @@ if(window.self !== window.top) {
             console.log("=========================")
             console.log("start:", "'"+slide.name+"'")
             console.log("=========================")
-            setTimeout(setup, 600)
+            setTimeout(setup, 50)
         } else if(msg.data == 'slide:stop') {
             console.log("=========================")
             console.log("stop:", "'"+slide.name+"'")

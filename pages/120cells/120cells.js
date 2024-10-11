@@ -2,7 +2,8 @@
 
 const slide = {
     name:"120 Cells",
-    shaderName : '4D'
+    shaderName : '4D',
+    theta : 0.0
 }
 
 function setup() {
@@ -125,7 +126,8 @@ function handlePointer() {
         oldx = x
         oldy = y
         if(status==1) {
-            let theta = dy*0.01
+            let theta = slide.theta = slide.theta + dy*0.01
+            if(Math.abs(theta) < 0.1) theta = 0;
             let csTheta = Math.cos(theta)
             let snTheta = Math.sin(theta)
             const arr = [
@@ -134,7 +136,9 @@ function handlePointer() {
                 0,0,1,0,
                 0,snTheta,0,csTheta
                 ]
-            let matrix = slide.model.matrix.multiply(BABYLON.Matrix.FromArray(arr))
+            
+            // let matrix = slide.model.matrix.multiply(BABYLON.Matrix.FromArray(arr))
+            let matrix = BABYLON.Matrix.FromArray(arr);
             slide.model.set4DRotationMatrix(matrix)
         }
         else if(status == 2) {

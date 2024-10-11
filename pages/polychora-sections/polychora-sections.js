@@ -46,7 +46,9 @@ function onResize() {
 
 function populateScene() {
     const scene = slide.scene
-    slide.model = new PolychoronSectionModel('model',PolychoronData.p120, scene)
+    slide.model = new PolychoronSectionModel('model',PolychoronData.p8, scene)
+    slide.model.matrix = BABYLON.Matrix.Identity();
+    slide.model.update();
 }
 
 let stop = false
@@ -154,7 +156,7 @@ function onKeyEvent(kbInfo) {
             }
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
-            console.log("KEY UP: ", kbInfo.event.keyCode);
+            // console.log("KEY UP: ", kbInfo.event.keyCode);
             break;
     }
 }

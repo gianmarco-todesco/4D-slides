@@ -1,6 +1,9 @@
 .reveal .quote {
     text-align: justify;
     padding:20px;
+    font-size:60px;
+    margin:100px;
+    text-align: justify;
 }
 
 .reveal .reference {
