@@ -16,7 +16,15 @@ const slide = {
     // The closer distanza is to the polychoron, the more nested the picture.
     distanzaSchlegel: 1.15,
     fuocoSchlegel: 2.4,
-    rapportoRaggioSchlegel: 2.4,
+    raggioSchlegel: 8.2,
+
+    // Where the diagram is being looked at from. Kept here rather than read back
+    // off the camera because Babylon routes a stray move to the other camera
+    // when the pointer crosses between the two viewports mid-drag, and the
+    // diagram would drift a few degrees on gestures that had nothing to do with
+    // it. tick() writes these onto the camera every frame, so it moves when we
+    // move it and at no other time.
+    vistaSchlegel: { alpha: 1.1, beta: 1.25 },
     spessoreSchlegel: 0.055
 }
 
@@ -45,8 +53,14 @@ function setup() {
     // controls, and picking has a single unambiguous answer.
     scene.cameraToUseForPointers = camera
 
+    // The diagram keeps its own 3D camera. Dragging on the right panel turns
+    // the picture and nothing else: the polychoron itself stays in its canonical
+    // 4D orientation there, which is the whole point of that panel.
     const cameraSchlegel = slide.cameraSchlegel = new BABYLON.ArcRotateCamera(
-        "CameraSchlegel", 1.5, 1.38, 4, new BABYLON.Vector3(0,0,0), scene)
+        "CameraSchlegel", slide.vistaSchlegel.alpha, slide.vistaSchlegel.beta, slide.raggioSchlegel,
+        new BABYLON.Vector3(0,0,0), scene)
+    cameraSchlegel.wheelPrecision = 20
+    cameraSchlegel.lowerRadiusLimit = 3
     cameraSchlegel.layerMask = MASCHERA_SCHLEGEL
 
     scene.activeCameras = [camera, cameraSchlegel]
@@ -59,6 +73,20 @@ function setup() {
     disponiPannelli()
 
     scene.registerBeforeRender(tick)
+
+    // After the render, not before: Babylon applies the camera inputs after
+    // onBeforeRender, so anything written in tick() would be undone in the same
+    // frame. Stamping our own value here is what keeps the diagram still when
+    // a drag that started on the left wanders across into the right panel.
+    scene.onAfterRenderObservable.add(() => {
+        const cs = slide.cameraSchlegel, v = slide.vistaSchlegel
+        cs.alpha = v.alpha
+        cs.beta = v.beta
+        cs.radius = slide.raggioSchlegel
+        cs.inertialAlphaOffset = 0
+        cs.inertialBetaOffset = 0
+        cs.inertialRadiusOffset = 0
+    })
     scene.onKeyboardObservable.add(onKeyEvent);
     handlePointer()
 
@@ -124,19 +152,16 @@ function tick() {
         if(!slide.assetController.tick()) slide.assetController = null;
     }
 
-    // The two views are locked together. Rather than hunt down every place that
-    // moves the section -- the w0 drag, the rotation drag, setShape, the
-    // AssetController -- watch what the section model actually holds and rebuild
-    // the diagram when it changes.
+    // The diagram is rebuilt when the section moves. Rather than hunt down every
+    // place that moves it -- the w0 drag, the rotation drag, setShape, the
+    // AssetController -- watch what the section model actually holds. The two
+    // cameras are NOT linked: only the cut points travel from one panel to the
+    // other, not the point of view.
     const m = slide.model, s = slide.schlegel
     if(s && s.visibile &&
        (s.w0Ultimo !== m.w0 || !s.matriceUltima || !m.matrix.equals(s.matriceUltima))) {
         s.update(m.matrix, m.w0)
     }
-    const cs = slide.cameraSchlegel
-    cs.alpha = slide.camera.alpha
-    cs.beta = slide.camera.beta
-    cs.radius = slide.camera.radius * slide.rapportoRaggioSchlegel
 }
 
 // ============================================================================
@@ -144,38 +169,70 @@ function tick() {
 function handlePointer() {
     let status = 0
     let oldx, oldy
+
+    // Crossing from one viewport to the other makes Babylon synthesise a
+    // POINTERUP followed by a POINTERDOWN, so a drag that began on the left and
+    // wandered right would quietly turn into a drag on the diagram halfway
+    // through. The DOM sees the truth -- one press, one release -- so the start
+    // and the end of a gesture are taken from there, and which panel it belongs
+    // to is settled once.
+    let bottonePremuto = false
+    let gestoIniziato = false
+    slide.canvas.addEventListener('pointerdown', () => {
+        bottonePremuto = true; gestoIniziato = false
+    }, true)
+    slide.canvas.addEventListener('pointerup', () => { bottonePremuto = false }, true)
+    slide.canvas.addEventListener('pointercancel', () => { bottonePremuto = false }, true)
     slide.scene.onPointerObservable.add(pointerInfo => {
         switch (pointerInfo.type) {
             case BABYLON.PointerEventTypes.POINTERDOWN:
                 onpointerdown(pointerInfo)
                 break
             case BABYLON.PointerEventTypes.POINTERUP:
-                if(status != 0) onpointerup(pointerInfo)
+                onpointerup(pointerInfo)
                 break
             case BABYLON.PointerEventTypes.POINTERMOVE:
                 if(status != 0) onpointerdrag(pointerInfo)
                 break
         }
     });
+    // Which panel the pointer went down in decides everything that follows.
+    function cameraDelPannello(offsetX) {
+        const doppio = slide.schlegel && slide.schlegel.visibile
+        if(doppio && offsetX >= slide.canvas.clientWidth * 0.5) return slide.cameraSchlegel
+        return slide.camera
+    }
+
     function onpointerdown(pointerInfo) {
-        console.log(pointerInfo)
-        if(pointerInfo.pickInfo.pickedMesh) {
-            console.log(pointerInfo.pickInfo.pickedMesh.name)
-        }
-        if(pointerInfo.event.offsetX<100) {
-            status = 1
-        } else if(pointerInfo.pickInfo.pickedMesh) {
-            status = 2
-        }
+        if(gestoIniziato) return
+        gestoIniziato = true
+
+        const x = pointerInfo.event.offsetX
+
+        // Dragging on the right turns the diagram and nothing else: it is fixed
+        // in 4D on purpose. Its camera is driven by hand here rather than with
+        // attachControl, because Babylon will not hand its pointer control from
+        // one camera to another in the middle of a gesture that has already
+        // begun -- try it and both cameras orbit at once.
+        if(cameraDelPannello(x) !== slide.camera) status = 3
+        else if(x < 100) status = 1
+        else if(pointerInfo.pickInfo.pickedMesh) status = 2
+
         if(status != 0) {
-            oldx = pointerInfo.event.offsetX
+            // The gesture is ours, so the section camera must not orbit through
+            // it. Detached at once, not on a later turn of the loop: deferring it
+            // let the opening moves orbit as well as turn the solid.
+            slide.camera.detachControl(slide.canvas)
+            oldx = x
             oldy = pointerInfo.event.offsetY
-            setTimeout(() => slide.camera.detachControl(slide.canvas))
         }
     }
     function onpointerup(pointerInfo) {
+        if(bottonePremuto) return          // sintetico: il dito e' ancora giu'
+        gestoIniziato = false
+        if(status == 0) return
         status = 0
-        slide.camera.attachControl(slide.canvas, true); 
+        slide.camera.attachControl(slide.canvas, true);
     }
     function onpointerdrag(pointerInfo) {
         
@@ -188,6 +245,11 @@ function handlePointer() {
         if(status==1) {
             slide.model.w0 += dy * 0.01
             slide.model.update()  
+        }
+        else if(status == 3) {
+            const v = slide.vistaSchlegel
+            v.alpha -= dx * 0.006
+            v.beta = Math.max(0.02, Math.min(Math.PI - 0.02, v.beta - dy * 0.006))
         }
         else if(status == 2) {
 
@@ -230,12 +292,11 @@ function onKeyEvent(kbInfo) {
                 slide.schlegel.setShape(data)
                 disponiPannelli()
             }
-            else if(kbInfo.event.key == "v") {
+            // v, e, f, c turn the polychoron in 4D so that a vertex, an edge, a
+            // face or a cell is what the sectioning space meets first.
+            else if("vefc".indexOf(kbInfo.event.key) >= 0 && kbInfo.event.key.length == 1) {
                 slide.assetController = new AssetController(slide.model);
-                slide.assetController.setVertex();
-            } else if (kbInfo.event.key == "c") {
-                slide.assetController = new AssetController(slide.model);
-                slide.assetController.setCell();
+                slide.assetController.puntaSu(kbInfo.event.key);
             }
             break;
         case BABYLON.KeyboardEventTypes.KEYUP:
@@ -294,8 +355,16 @@ class PolychoronSchlegelModel {
     update(matrix, w0) {
         const T = BABYLON.Vector4.Transform
         const data = this.data
-        const pts4 = data.vertices.map(p => T(matrix, p))
-        const pts = pts4.map(p => this.proietta(p))
+
+        // The diagram always draws the polychoron in its canonical orientation,
+        // so it is built from the vertices as they come, with no rotation: for
+        // the tesseract that is always the big cube with the small one inside.
+        //
+        // The 4D rotation still decides which edges the hyperplane crosses and
+        // how far along, because that is a fact about the solid rather than
+        // about how we choose to draw it. Only the w values need rotating.
+        const w = data.vertices.map(p => T(matrix, p).w)
+        const pts = data.vertices.map(p => this.proietta(p))
 
         const rV = slide.spessoreSchlegel, rE = rV * 0.45
 
@@ -304,20 +373,22 @@ class PolychoronSchlegelModel {
         data.edges.forEach(([a,b]) => this.base.addEdge(pts[a], pts[b], rE))
         this.base.endUpdate()
 
-        // Where the hyperplane cuts an edge. The point has w = w0 by
-        // construction, so the 4D point is just the interpolated xyz with w0.
+        // Where the hyperplane cuts an edge. s is worked out from the rotated w
+        // values, then the point is placed at that same fraction along the
+        // UNROTATED edge: same point of the solid, drawn in the canonical
+        // diagram.
         const tagli = {}
-        const m = pts4.length
+        const m = data.vertices.length
         this.sezione.beginUpdate()
         data.edges.forEach(([a,b]) => {
-            const wa = pts4[a].w, wb = pts4[b].w
-            if((wa - w0) * (wb - w0) >= 0) return
-            const s = (w0 - wa) / (wb - wa)
+            if((w[a] - w0) * (w[b] - w0) >= 0) return
+            const s = (w0 - w[a]) / (w[b] - w[a])
+            const va = data.vertices[a], vb = data.vertices[b]
             const q = new BABYLON.Vector4(
-                pts4[a].x + (pts4[b].x - pts4[a].x) * s,
-                pts4[a].y + (pts4[b].y - pts4[a].y) * s,
-                pts4[a].z + (pts4[b].z - pts4[a].z) * s,
-                w0)
+                va.x + (vb.x - va.x) * s,
+                va.y + (vb.y - va.y) * s,
+                va.z + (vb.z - va.z) * s,
+                va.w + (vb.w - va.w) * s)
             tagli[a*m + b] = tagli[b*m + a] = this.proietta(q)
         })
         Object.values(tagli).forEach(p => this.sezione.addVertex(p, rV * 1.7))
@@ -544,21 +615,33 @@ class AssetController {
     setTargetPoints(pts) {
         const model = this.model;
         this.startMatrix = model.matrix.clone();
-        this.t = 0;        
+        this.t = 0;
         this.v1 = BABYLON.Vector4.Transform(model.matrix, pts[0]);
+        this.vIndex = 0;
         for(let i=1;i<pts.length;i++) {
             let v = BABYLON.Vector4.Transform(model.matrix, pts[i]);
-            if(v.w<this.v1) { this.v1 = v; this.vIndex = i; }
+            // Was `v.w < this.v1`, a number against a Vector4: never true. So it
+            // always took pts[0] and swung it all the way round, however far it
+            // happened to be. Comparing the w's picks the feature that is
+            // already nearest, which is the short way there.
+            if(v.w < this.v1.w) { this.v1 = v; this.vIndex = i; }
         }
-        return this.vIndex;        
+        return this.vIndex;
     }
-    setVertex() {
-        return this.setTargetPoints(this.model.data.vertices);
-    }
-    setCell() {
+
+    // Bring a vertex, an edge, a face or a cell to meet the sectioning space
+    // first. The three new ones are just the averages of the points involved.
+    puntaSu(tasto) {
         const data = this.model.data;
-        let pts = data.cells.map((c,i) => data.getCellCenter(i));
-        return this.setTargetPoints(pts);
+        const media = idx => {
+            const c = new BABYLON.Vector4(0,0,0,0);
+            idx.forEach(i => c.addInPlace(data.vertices[i]));
+            return c.scaleInPlace(1/idx.length);
+        };
+        if(tasto === 'v') return this.setTargetPoints(data.vertices);
+        if(tasto === 'e') return this.setTargetPoints(data.edges.map(media));
+        if(tasto === 'f') return this.setTargetPoints(data.faces.map(media));
+        return this.setTargetPoints(data.cells.map((c,i) => data.getCellCenter(i)));
     }
     setParam(t) {
         this.t = t;

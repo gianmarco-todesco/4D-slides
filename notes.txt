@@ -111,9 +111,13 @@ Il diagramma di Schlegel nelle sezioni 4D.
     (1) I due pannelli sono affiancati e la SEZIONE STA A SINISTRA: non e'
     estetica, e' che il trascinamento che muove w0 vive nei 100 px piu' a
     sinistra, e mettere il diagramma li' avrebbe costretto a cambiare quel gesto.
-    (2) Le due viste sono legate: stessa matrice 4D, stessa orbita. Una sola
-    camera prende il puntatore (scene.cameraToUseForPointers), l'altra la copia:
-    cosi' i comandi sono uno solo e il picking ha una risposta sola.
+    (2) Il diagramma sta SEMPRE nell'orientamento 4D canonico: per il tesseratto
+    e' sempre il cubo grande col cubo piccolo dentro, qualunque cosa faccia la
+    sezione. La rotazione 4D continua pero' a decidere quali spigoli vengono
+    tagliati e in che punto, perche' quella e' una proprieta' del solido e non
+    di come lo disegniamo: la frazione lungo lo spigolo e' lo stesso numero in
+    qualunque orientamento. Il click&drag sul pannello destro si limita a girare
+    l'immagine in 3D.
     (3) Il diagramma si vede solo per i tasti 1-4. Il 120-celle e il 600-celle
     hanno 1200 e 720 spigoli e come Schlegel sono gomitoli; per loro il pannello
     sparisce e la sezione si riprende tutto il canvas.
@@ -126,6 +130,21 @@ Il diagramma di Schlegel nelle sezioni 4D.
     Il diagramma si riallinea da tick(): invece di rincorrere tutti i punti che
     muovono la sezione (w0, rotazione, setShape, AssetController) si guarda cosa
     contiene il modello della sezione e si ricostruisce quando cambia.
+    I tasti v, e, f, c girano il policoro in 4D perche' sia un vertice, uno
+    spigolo, una faccia o una cella a incontrare per primo lo spazio della
+    sezione.
+
+Due trappole del puntatore, con due viewport.
+    Babylon non passa il controllo da una camera all'altra a meta' di un gesto
+    gia' cominciato: provandoci orbitano tutte e due. Percio' la camera del
+    diagramma e' pilotata a mano (status 3) e la sua posizione vive in
+    slide.vistaSchlegel, riscritta sulla camera in onAfterRender -- non in
+    tick(), perche' Babylon applica gli input della camera DOPO onBeforeRender e
+    disferebbe il valore nello stesso fotogramma.
+    E quando il puntatore passa da un viewport all'altro Babylon sintetizza una
+    coppia rilascio+pressione, che faceva cambiare pannello a meta' trascinamento.
+    L'inizio e la fine di un gesto si prendono percio' dagli eventi DOM veri, dove
+    la pressione e' una sola.
 
 La sezione partiva vuota, ed era un difetto vecchio.
     populateScene() forza la matrice all'identita' -- di proposito, cosi' la
