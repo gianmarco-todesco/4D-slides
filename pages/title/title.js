@@ -8,7 +8,7 @@ function setup() {
     let canvas = slide.canvas = document.getElementById("renderCanvas")
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
-    scene.clearColor.set(1,1,1,1);
+    applySlideBackground(scene)
 
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 10, 
@@ -56,7 +56,10 @@ function tick() {
     slide.model.update()
 }
 
-function placeCylinder(cylinder, vStart, vEnd) {
+// Same as placeCylinder() in libs/gutil.js but without the radius
+// argument, so it must not share its name: this file is loaded after
+// gutil.js and would otherwise shadow it with a different signature.
+function placeUnitCylinder(cylinder, vStart, vEnd) {
     const distance = BABYLON.Vector3.Distance(vStart,vEnd )
     BABYLON.Vector3.LerpToRef(vStart,vEnd,0.5,cylinder.position)       
     cylinder.scaling.set(1,distance,1)
@@ -79,8 +82,11 @@ class PolychoronModel {
 
         let dot = BABYLON.MeshBuilder.CreateSphere(name+'-dot', {diameter:0.1}, scene)
         dot.parent = pivot
+        // Against the dark background this magenta was bright; against white it
+        // shouts, and it has to sit under the title text.
+        const inkColour = themed([0.35, 0.10, 0.45], [0.6, 0.1, 0.7])
         let mat = dot.material = new BABYLON.StandardMaterial(name+'dot-mat', scene)
-        mat.diffuseColor.set(0.6,0.1,0.7)
+        mat.diffuseColor.set(...inkColour)
         this.vertices = [dot]
         for(let i = 1; i<data.vertices.length; i++) { 
             let inst = dot.createInstance(name+'-dot-inst-'+i)
@@ -91,13 +97,40 @@ class PolychoronModel {
         let edge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.1, height:1}, scene)
         edge.parent = pivot
         mat = edge.material = new BABYLON.StandardMaterial(name+'edge-mat', scene)
-        mat.diffuseColor.set(0.6,0.1,0.7)
+        mat.diffuseColor.set(...inkColour)
         this.edges = [edge]
         for(let i = 1; i<data.edges.length; i++) { 
             let inst = edge.createInstance(name+'-edge-inst-'+i)
             this.edges.push(inst);
             inst.parent = pivot;
         }
+
+        // Translucent faces.
+        //
+        // One mesh per face, not one mesh holding all 24. These are transparent,
+        // and Babylon sorts transparent *meshes* back to front before drawing
+        // them; a single mesh would go out as one unsorted batch and the
+        // overlaps would pop as the tesseract turns. 24 draw calls is nothing.
+        //
+        // The 4D to 3D projection is a central projection, so it takes plane to
+        // plane: each square face stays planar and two triangles are exact.
+        const faceMat = this.faceMaterial = new BABYLON.StandardMaterial(name+'-face-mat', scene)
+        faceMat.diffuseColor.set(...themed([0.55, 0.35, 0.65], [0.7, 0.6, 0.9]))
+        faceMat.specularColor.set(0.1, 0.1, 0.1)
+        faceMat.alpha = themed(0.13, 0.2)
+        faceMat.backFaceCulling = false      // a face can be seen from either side
+        this.faces = data.faces.map((f, i) => {
+            const m = new BABYLON.Mesh(name+'-face-'+i, scene)
+            m.material = faceMat
+            m.parent = pivot
+            return m
+        })
+        this.faceBuffers = data.faces.map(f => ({
+            positions: new Float32Array(f.length * 3),
+            normals: new Float32Array(f.length * 3),
+            indices: (() => { const ix = []; for(let k=2; k<f.length; k++) ix.push(0, k-1, k); return ix })(),
+            built: false
+        }))
 
         this.xwRotation = {
             status: 0,
@@ -151,6 +184,30 @@ class PolychoronModel {
         }
     }
 
+    updateFaces() {
+        this.data.faces.forEach((f, i) => {
+            const buf = this.faceBuffers[i]
+            f.forEach((j, k) => {
+                const p = this.vertices[j].position
+                buf.positions[k*3]   = p.x
+                buf.positions[k*3+1] = p.y
+                buf.positions[k*3+2] = p.z
+            })
+            BABYLON.VertexData.ComputeNormals(buf.positions, buf.indices, buf.normals)
+            if(!buf.built) {
+                const vd = new BABYLON.VertexData()
+                vd.positions = buf.positions
+                vd.indices = buf.indices
+                vd.normals = buf.normals
+                vd.applyToMesh(this.faces[i], true)   // updatable
+                buf.built = true
+            } else {
+                this.faces[i].updateVerticesData(BABYLON.VertexBuffer.PositionKind, buf.positions)
+                this.faces[i].updateVerticesData(BABYLON.VertexBuffer.NormalKind, buf.normals)
+            }
+        })
+    }
+
     update() {
         let phi = this.xwRotation.angle; // performance.now() * 0.001
         let cs = Math.cos(phi), sn = Math.sin(phi)
@@ -176,8 +233,10 @@ class PolychoronModel {
         this.data.edges.forEach(([a,b],i)=>{
             let pa = this.vertices[a].position
             let pb = this.vertices[b].position
-            placeCylinder(this.edges[i], pa,pb)
+            placeUnitCylinder(this.edges[i], pa,pb)
         })
+
+        this.updateFaces()
 
         const dt = slide.engine.getDeltaTime() * 0.001;
         this.stepXw(dt);
@@ -190,13 +249,15 @@ class PolychoronModel {
 
 
 function onKeyEvent(kbInfo) {
-    const model = slide.model;
     switch (kbInfo.type) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
-            const key = kbInfo.event.keyCode
-            console.log(kbInfo.event);
-            if("123456".indexOf(key)>=0) {
-                model.pivot.dispose()
+            // event.key, not event.keyCode: the cases below are characters, and
+            // comparing them against a numeric keyCode is what kept keys 1-6
+            // from ever selecting a polychoron here. polychora.js does the same
+            // job with keyCode, and matches against numbers.
+            const key = kbInfo.event.key
+            if(key.length == 1 && "123456".indexOf(key)>=0) {
+                slide.model.pivot.dispose()
                 let data
                 switch(key)
                 {
@@ -207,11 +268,13 @@ function onKeyEvent(kbInfo) {
                     case '5': data = PolychoronData.p120; break
                     case '6': data = PolychoronData.p600; break
                 }
-                model = new PolychoronModel('pc', data, slide.scene)
-                model.update()                
+                // slide.model, not a local: tick() renders whatever slide.model
+                // points at, and the local was declared const anyway.
+                slide.model = new PolychoronModel('pc', data, slide.scene)
+                slide.model.update()
             }
-            else if(kbInfo.event.key=='r') {
-
+            else if(key == 'r') {
+                const model = slide.model
                 if(model.xwRotation.status == 0)
                     model.startXwRotation();
                 else if(model.xwRotation.status == 1)

@@ -8,6 +8,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
+    applySlideBackground(scene)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         -Math.PI / 2, 0.3, 50, 
@@ -34,9 +35,9 @@ function setup() {
 function cleanup() {
     window.removeEventListener("resize", onResize)
     slide.engine.stopRenderLoop()
-    slide.scene.dispose
+    slide.scene.dispose()
     delete slide.scene
-    slide.engine.dispose
+    slide.engine.dispose()
     delete slide.engine    
 }
 
@@ -62,8 +63,14 @@ function populateScene()
     ground.receiveShadows = true;
 
     let groundMat = ground.material = new BABYLON.StandardMaterial("groundMat", scene);
-    groundMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.4);
-    groundMat.ambientColor = new BABYLON.Color3(0.4, 0.4, 0.4);
+    // The ground is here to catch the cube's shadow, which is what makes the
+    // folding readable. Against the dark background a mid grey slab read as a
+    // floor; against white it is a huge grey trapezoid that dominates the
+    // slide. White lets it disappear into the background and leaves just the
+    // shadow, which is all it was ever for.
+    const groundShade = themed([1, 1, 1], [0.4, 0.4, 0.4]);
+    groundMat.diffuseColor = new BABYLON.Color3(...groundShade);
+    groundMat.ambientColor = new BABYLON.Color3(...groundShade);
     groundMat.specularColor.set(0.01,0.01,0.01)
 
     let light = new BABYLON.PointLight(

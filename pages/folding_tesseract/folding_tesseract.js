@@ -12,6 +12,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById('foldingTesseractCanvas');
     const engine = slide.engine = new BABYLON.Engine(canvas, true);
     const scene = slide.scene = new BABYLON.Scene(engine);
+    applySlideBackground(scene)
     const camera = slide.camera = new BABYLON.ArcRotateCamera('camera1',
         -1.0, 1.8, maxCameraRadius, new BABYLON.Vector3(0, 0, 0), scene);
     camera.setTarget(BABYLON.Vector3.Zero());

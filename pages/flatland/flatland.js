@@ -31,9 +31,9 @@ function setup() {
 function cleanup() {
     window.removeEventListener("resize", onResize)
     slide.engine.stopRenderLoop()
-    slide.scene.dispose
+    slide.scene.dispose()
     delete slide.scene
-    slide.engine.dispose
+    slide.engine.dispose()
     delete slide.engine    
 }
 

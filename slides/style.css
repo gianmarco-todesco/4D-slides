@@ -27,10 +27,12 @@
     position:absolute;
 }
 
+/* The orange rule that used to be here framed each iframe against the dark
+   background. On white it only adds a line that means nothing, so there is no
+   border by default now. .noborder below is kept: it is still on the Yendred
+   slide and does no harm. */
 .reveal iframe {
-    /* width:600px;
-    height:400px; */
-    border:solid 1px orange;
+    border: none;
 }
 
 .reveal .noborder {
@@ -40,3 +42,22 @@
 .reveal .quote {
 }
 */
+
+/* Stands in for MathJax on the hypersphere slide. Those three formulas were the
+   only maths in the deck, and they cost a CDN host plus 1 MB of JavaScript that
+   had to be reachable from the venue. Plain markup instead. */
+.reveal .formulas .label {
+    color: teal;
+    font-size: 60px;
+    margin: 40px 0 0 0;
+}
+
+.reveal .formulas .math {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 90px;
+    margin: 0;
+}
+
+.reveal .formulas .math sup {
+    font-size: 0.55em;
+}

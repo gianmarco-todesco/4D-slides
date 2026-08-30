@@ -7,7 +7,7 @@ function setup() {
     let canvas = slide.canvas = document.getElementById("renderCanvas")
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
-    // scene.clearColor.set(1,1,1)
+    applySlideBackground(scene)
     scene.ambientColor.set(10,10,10);
     
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
@@ -32,9 +32,9 @@ function setup() {
 
 function cleanup() {
     slide.engine.stopRenderLoop()
-    slide.scene.dispose
+    slide.scene.dispose()
     delete slide.scene
-    slide.engine.dispose
+    slide.engine.dispose()
     delete slide.engine
 }
 
@@ -253,7 +253,7 @@ class YendredModel {
         rttMaterial2.backFaceCulling = false
         rttMaterial2.alpha = 0.5;
 
-        let bgColor = new BABYLON.Color3()
+        let bgColor = new BABYLON.Color4()   // Color3 here dropped the alpha on the way back
     
         rtt.onBeforeRender = (e) => {
             rtt.renderList.forEach(mesh => {
@@ -263,7 +263,7 @@ class YendredModel {
                 }
             })
             bgColor.copyFrom(scene.clearColor)
-            scene.clearColor.set(1,1,1)
+            scene.clearColor.set(1,1,1,1)
         }
         rtt.onAfterRender = () => {
             rtt.renderList.forEach(mesh => {

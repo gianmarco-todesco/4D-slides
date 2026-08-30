@@ -6,7 +6,6 @@
 		<link rel="stylesheet" href="../reveal/dist/reset.css">
 		<link rel="stylesheet" href="../reveal/dist/reveal.css">
         <link rel="stylesheet" href="../reveal/dist/theme/white.css">
-        <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 		<!-- Theme used for syntax highlighted code -->
 		<link rel="stylesheet" href="../reveal/plugin/highlight/monokai.css">
@@ -197,6 +196,19 @@
                 plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
             }).then(()=>{
                 console.log("qui")
+                // Tell the pages inside the iframes what scale they are being
+                // drawn at, so they can size their drawing buffer to the pixels
+                // they actually cover. They can usually work it out from
+                // frameElement; this is for when they cannot reach the parent.
+                const pushScale = () => {
+                    const scale = Reveal.getScale()
+                    document.querySelectorAll('.reveal iframe').forEach(f => {
+                        if(f.contentWindow) f.contentWindow.postMessage({type:'deck:scale', scale}, '*')
+                    })
+                }
+                Reveal.on('resize', pushScale)
+                Reveal.on('slidechanged', () => setTimeout(pushScale, 700))
+                pushScale()
                 Reveal.getCurrentSlide().querySelectorAll('iframe').forEach(iframe => {
                     iframe.contentWindow.postMessage('slide:start');
                 });

@@ -33,9 +33,9 @@ function setup() {
 
 function cleanup() {
     engine.stopRenderLoop()
-    scene.dispose
+    scene.dispose()
     scene = undefined
-    engine.dispose
+    engine.dispose()
     engine = undefined
     camera = undefined
 

@@ -8,6 +8,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
+    applySlideBackground(scene)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         1.738, 1.851, 10, 
@@ -31,9 +32,9 @@ function setup() {
 function cleanup() {
     window.removeEventListener("resize", onResize)
     slide.engine.stopRenderLoop()
-    slide.scene.dispose
+    slide.scene.dispose()
     delete slide.scene
-    slide.engine.dispose
+    slide.engine.dispose()
     delete slide.engine    
 }
 
@@ -228,16 +229,37 @@ class PolychoronSectionModel extends GeometricModel {
         this.update()
     }
 
+    // One face of the section comes from each cell the hyperplane cuts, so the
+    // cell colours are the face colours. At w0 = 0.35 the plane cuts 510 of the
+    // 600 cells: this is a star polychoron and its tetrahedra run through each
+    // other, so a great many are in play at once and the colouring decides
+    // whether the section reads as a solid or as confetti.
+    //
+    // It used to take the hue from the cell centre's w, stretched over the whole
+    // red-to-blue rainbow. The trouble is that the centres all sit inside
+    // w in [-0.125, 0.125]: normalising that near-degenerate spread to a full
+    // rainbow turns what is almost numerical noise into maximum colour
+    // contrast, and 510 differently coloured polygons hide the shape.
+    //
+    // In a regular polychoron the hyperplane of a cell is perpendicular to the
+    // direction of its centre, so that direction, rotated and with w dropped, is
+    // exactly the normal of the section face. Taking the hue from it gives
+    // parallel faces the same colour, which is what lets the eye group a
+    // complicated solid -- and it stays put unless you actually turn the thing.
     setCellColors() {
-        let ws = this.data.cells.map((c,i) => 
-            BABYLON.Vector4.Transform(this.matrix, this.data.getCellCenter(i)).w);
-        let wmin = ws[0], wmax = ws[0];
-        for(let i=1;i<ws.length;i++) {
-            let w = ws[i];
-            wmin = Math.min(wmin,w);
-            wmax = Math.max(wmax,w);
-        }
-        this.cellColors = ws.map(w=>HSVtoRGB((2/3)*(w-wmin)/(wmax-wmin),0.75,0.8))
+        const T = BABYLON.Vector4.Transform
+        this.cellColors = this.data.cells.map((cell, i) => {
+            const q = T(this.matrix, this.data.getCellCenter(i))
+            const n = Math.hypot(q.x, q.y, q.z) || 1
+            const x = q.x/n, y = q.y/n, z = q.z/n
+            return themed(
+                // A harmonious band rather than the full circle: cyan through
+                // violet reads on white without turning into sweets.
+                HSVtoRGB(0.45 + 0.25 * ((Math.atan2(y, x)/(2*Math.PI) + 1) % 1),
+                         0.30 + 0.30 * Math.abs(z), 0.93),
+                // What the dark theme had: hue straight from w, full rainbow.
+                HSVtoRGB((2/3) * (q.w - (-0.125)) / 0.25, 0.75, 0.8))
+        })
     }
 
 

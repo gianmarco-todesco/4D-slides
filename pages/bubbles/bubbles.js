@@ -8,9 +8,13 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
+    // Explicit and near-black: the film is drawn with additive blending, so it
+    // has to add light to something dark. Babylon's default (0.2,0.2,0.3) is a
+    // mid grey that the old material could only ever darken.
+    scene.clearColor.set(0.02, 0.02, 0.05, 1)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        Math.PI / 2, Math.PI / 2, 10, 
+        Math.PI / 2, Math.PI / 2, 9, 
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
@@ -46,16 +50,32 @@ function onResize() {
 
 let stop = false
 
+// The xw rotation sweeps faces through the pole of the stereographic projection
+// (w = 1), where they blow up into sheets that cover everything: measured, the
+// object went from 23% to 97% of the frame over one full turn, and the cluster
+// was swamped for most of it. theta = 0 is the frame where it reads best -- a
+// compact, centred, symmetric cluster -- so we only breathe around it. Even this
+// narrow a band still shows the thing worth showing: one cell inflates while
+// another deflates as they move in w. Set slide.thetaAmplitude = Math.PI to get
+// the full sweep back.
+slide.thetaAmplitude = 0.13
+slide.thetaPeriod = 14000
+
 function tick() {
-    const theta = performance.now() * 0.0001;
+    const theta = slide.thetaAmplitude *
+        Math.sin(performance.now() * 2 * Math.PI / slide.thetaPeriod);
     const cs = Math.cos(theta);
     const sn = Math.sin(theta);
-    slide.model.mesh.material.setMatrix('rot4', BABYLON.Matrix.FromArray([
+    const mat = slide.model.mesh.material
+    mat.setMatrix('rot4', BABYLON.Matrix.FromArray([
         cs,0,0,-sn,
         0,1,0,0,
         0,0,1,0,
         sn,0,0,cs
     ]))
+    // The shader used to assume the eye was at (0,0,10), so the highlights did
+    // not follow the camera as soon as you orbited.
+    mat.setVector3('eye', slide.camera.position)
 }
 
 
@@ -188,24 +208,53 @@ class PolychoronBubbleModel {
     createShaderMaterial() {
         const scene = slide.scene
         const shaderName = 'hyperBubble'
-        var mat = new BABYLON.ShaderMaterial("bubbleMaterial", scene, {
+        const mat = new BABYLON.ShaderMaterial("bubbleMaterial", scene, {
                 vertex: shaderName,
                 fragment: shaderName,
             },
             {
-                attributes: [
-                    "position", "origin","e0","e1" 
-                ],
+                attributes: ["position", "origin", "e0", "e1"],
                 uniforms: [
-                    "world", "worldView", 
-                    "worldViewProjection", 
-                    "view", "projection",
-                    "rot4"
+                    "world", "worldView", "worldViewProjection",
+                    "view", "projection", "rot4", "eye",
+                    "filmBase", "fresnelGain", "borderWidth", "borderGain",
+                    "iriGain", "specGain", "fadeStart", "fadeEnd",
+                    "sizeMin", "sizeMax", "sizeWeight"
                 ]
             });
+
+        // Additive, depth-write off. Two reasons, and the second is why the old
+        // alpha blending could not have worked whatever the colours were: a soap
+        // film adds light rather than subtracting it, AND additive blending is
+        // order independent. The 720 pentagons are instances of one mesh, so
+        // they go out in a single unsorted draw call -- under SRC_ALPHA blending
+        // the result depended on instance order, which is arbitrary.
+        mat.alphaMode = BABYLON.Constants.ALPHA_ONEONE
+        mat.alpha = 0.999                   // makes Babylon take the blend path
+        mat.disableDepthWrite = true
         mat.backFaceCulling = false
-        mat.alpha = 0.2
-        
+
+        // Uniforms rather than #defines so they can be tuned from the console
+        // without a shader recompile: mat.setFloat('fresnelGain', 0.8).
+        slide.params = {
+            filmBase:    0.09,   // brightness face-on, where a film is nearly invisible
+            fresnelGain: 1.2,    // brightness at grazing angles: the main soap cue
+            borderWidth: 0.075,   // Plateau border width, in patch uv units
+            borderGain:  0.10,    // brightness of the 120 degree junctions
+            iriGain:     0.30,    // thin-film iridescence, 0 = white film
+            specGain:    0.50,
+            fadeStart:   3.2,     // fade geometry blown up near the pole
+            fadeEnd:     5.5,
+            // Band-pass on cell size. Stereographic projection spreads the 720
+            // faces over a huge range of scales: the ones near the pole become
+            // screen-filling sheets, the ones near the antipode pile up into a
+            // saturated blob. Only the middle of the range reads as a foam.
+            sizeMin:     0.12,
+            sizeMax:     4.0,
+            sizeWeight:  0.30    // how much the smallest cells are dimmed
+        }
+        Object.keys(slide.params).forEach(k => mat.setFloat(k, slide.params[k]))
+        mat.setVector3('eye', new BABYLON.Vector3(0, 0, 10))
         mat.setMatrix('rot4', BABYLON.Matrix.Identity())
 
         return mat
@@ -222,93 +271,132 @@ function populateScene() {
     const shaderName = 'hyperBubble'
 
     // ---------------------------------------------------------
-    BABYLON.Effect.ShadersStore[shaderName + "VertexShader"]= `
+    BABYLON.Effect.ShadersStore[shaderName + "VertexShader"] = `
     precision highp float;
 
-    // Attributes
     attribute vec3 position;
     attribute vec4 origin, e0, e1;
 
-    // Uniforms
-    uniform mat4 worldViewProjection, world, worldView;
+    uniform mat4 worldViewProjection, world, worldView, view;
     uniform mat4 rot4;
+    uniform vec3 eye;
+    uniform float fadeStart, fadeEnd, sizeMin, sizeMax, sizeWeight;
 
     varying vec3 v_norm;
-    varying vec3 v_pos;
-    varying vec3 v_surfaceToLight;
-    varying vec3 v_surfaceToView;
+    varying vec3 v_view;
+    varying vec2 v_uv;
+    varying float v_fade;
+    varying float v_phase;
 
-
-    #define PI 3.1415926535897932384626433832795
-
-    vec3 fun(float u, float v) {   
-        
-        vec4 pos =rot4 * (origin + u * e0 + v * e1);
+    // Inflate the flat pentagon onto the unit 3-sphere, then project it
+    // stereographically from w = 1. The projection is conformal, and that is
+    // what makes three films meet at 120 degrees here exactly as they do in a
+    // real cluster: the whole point of the slide rests on this function.
+    vec3 fun(float u, float v) {
+        vec4 pos = rot4 * (origin + u * e0 + v * e1);
         pos = normalize(pos);
         float k = 0.5 / (1.0 - pos.w);
         return vec3(pos.x * k, pos.y * k, pos.z * k);
     }
 
     void main(void) {
-        vec2 uv = vec2(position.x, position.z);
+        v_uv = vec2(position.x, position.z);
 
-        vec3 p = fun(uv.x, uv.y);
+        vec3 p = fun(v_uv.x, v_uv.y);
         float epsilon = 0.001;
-        vec3 dpdu = fun(uv.x+epsilon, uv.y) - fun(uv.x-epsilon, uv.y);
-        vec3 dpdv = fun(uv.x, uv.y+epsilon) - fun(uv.x, uv.y-epsilon) ;
+        vec3 dpdu = fun(v_uv.x + epsilon, v_uv.y) - fun(v_uv.x - epsilon, v_uv.y);
+        vec3 dpdv = fun(v_uv.x, v_uv.y + epsilon) - fun(v_uv.x, v_uv.y - epsilon);
         vec3 norm = normalize(cross(dpdu, dpdv));
-        
 
         gl_Position = worldViewProjection * vec4(p, 1.0);
-        v_norm = (worldView * vec4(norm, 0.0)).xyz;
 
-        /*
-        vUV = vec2(position.x, position.z);
-        //if(p.x*p.x+p.y*p.y+p.z*p.z>100.0) err = 1.0;
-        //else err = 0.0;
-        */
+        vec3 world_p = (world * vec4(p, 1.0)).xyz;
+        v_norm = (world * vec4(norm, 0.0)).xyz;
+        v_view = eye - world_p;
 
-        v_surfaceToLight = vec3(0.0,10.0,0.0) - (world * vec4(p,1.0)).xyz;
-        v_surfaceToView = (vec4(0.0,0.0,10.0,1.0) - (world * vec4(p,1.0))).xyz; // u_viewInverse[3] 
+        // How much the projection stretches this patch locally. dpdu is a
+        // central difference over 2*epsilon, so divide it back out.
+        float stretch = length(dpdu) / (2.0 * epsilon);
+
+        // Drop the screen-filling sheets near the pole and the degenerate
+        // slivers, but only dim the small cells rather than removing them: they
+        // are the interior structure, and cutting them leaves a hole in the
+        // middle of the cluster. Because they are many and overlap, each one has
+        // to count for less light or the additive blend saturates to white.
+        float big   = 1.0 - smoothstep(sizeMax, sizeMax * 2.0, stretch);
+        float small = smoothstep(sizeMin, sizeMin * 2.5, stretch);
+        float crowd = mix(sizeWeight, 1.0, smoothstep(sizeMin, sizeMax * 0.5, stretch));
+
+        v_fade = (1.0 - smoothstep(fadeStart, fadeEnd, length(p))) * big * small * crowd;
+
+        // Per-face film thickness, so neighbouring films differ in colour the
+        // way they do in a real foam.
+        v_phase = fract(dot(origin, vec4(12.9898, 78.233, 45.164, 94.673)) * 0.037);
     }
 `
 
-BABYLON.Effect.ShadersStore[shaderName + "FragmentShader"]= `
+    BABYLON.Effect.ShadersStore[shaderName + "FragmentShader"] = `
     precision highp float;
 
     varying vec3 v_norm;
-    varying vec3 v_pos;    
-    varying vec3 v_surfaceToLight;
-    varying vec3 v_surfaceToView;
+    varying vec3 v_view;
+    varying vec2 v_uv;
+    varying float v_fade;
+    varying float v_phase;
 
-    vec4 lit(float l ,float h, float m) {
-        return vec4(1.0,
-                    abs(l),//max(l, 0.0),
-                    (l > 0.0) ? pow(max(0.0, h), m) : 0.0,
-                    1.0);
+    uniform float filmBase, fresnelGain, borderWidth, borderGain;
+    uniform float iriGain, specGain;
+
+    #define TAU 6.283185307179586
+
+    // Distance from the pentagon boundary in patch uv coordinates: 0 on the
+    // edge, up to the apothem at the centre. The five edge normals bisect the
+    // five vertices, which buildMesh puts at angles 2*pi*i/5 and radius 1.
+    float pentagonEdge(vec2 p) {
+        const float APOTHEM = 0.80901699;      // cos(pi/5)
+        float m = -1.0;
+        for (int i = 0; i < 5; i++) {
+            float a = TAU * (float(i) + 0.5) / 5.0;
+            m = max(m, dot(p, vec2(cos(a), sin(a))));
+        }
+        return APOTHEM - m;
     }
 
     void main(void) {
-        vec3 norm = normalize(v_norm);
-        vec3 surfaceToLight = normalize(v_surfaceToLight);
-        vec3 surfaceToView = normalize(v_surfaceToView);
-        vec3 halfVector = normalize(surfaceToLight + surfaceToView);
-        
-        if(dot(surfaceToView, norm)<0.0) {  norm = -norm; }
-        float cs = dot(norm, surfaceToLight);
-        vec4 litR = lit(cs,dot(norm, halfVector), 120.0);
+        vec3 N = normalize(v_norm);
+        vec3 V = normalize(v_view);
+        if (dot(N, V) < 0.0) N = -N;            // a film has no inside
+        float ndv = clamp(dot(N, V), 0.0, 1.0);
 
-        vec3 v_color = vec3(0.2,0.2,0.2);
-        vec3 color = v_color * litR.y + vec3(1.0,1.0,1.0) * litR.z;
-        gl_FragColor = vec4(color,0.2); // texture2D(textureSampler, vUV);      
+        // Fresnel. This says "soap film" more than anything else does: the film
+        // is almost invisible face-on and bright edge-on, which is what draws
+        // the silhouette of every single bubble in a cluster.
+        float fres = pow(1.0 - ndv, 3.0);
+
+        // Thin-film interference, approximated as a hue sweep driven by the
+        // per-face thickness and the viewing angle.
+        float t = fract(v_phase + 0.55 * (1.0 - ndv));
+        vec3 iri = 0.5 + 0.5 * cos(TAU * (t + vec3(0.0, 0.33, 0.67)));
+        iri = mix(vec3(1.0), iri, iriGain);
+
+        // Plateau borders, where three films meet at 120 degrees. Three
+        // coincident patch edges land on each one, so the additive blend
+        // brightens them by itself; this only has to give them a width.
+        float d = pentagonEdge(v_uv);
+        float border = 1.0 - smoothstep(0.0, borderWidth, d);
+
+        vec3 L = normalize(vec3(0.4, 1.0, 0.6));
+        vec3 H = normalize(L + V);
+        float spec = pow(max(dot(N, H), 0.0), 80.0);
+
+        float film = filmBase + fresnelGain * fres;
+
+        vec3 color = iri * film
+                   + vec3(1.0) * spec * specGain * (0.3 + 0.7 * fres)
+                   + iri * border * borderGain;
+
+        gl_FragColor = vec4(color * v_fade, 1.0);   // additive: alpha is unused
     }
-` 
-// ---------------------------------------------------------
-
-
-
+`
+    // ---------------------------------------------------------
 })()
-
-
-
-

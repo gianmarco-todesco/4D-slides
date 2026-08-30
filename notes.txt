@@ -1,16 +1,121 @@
 
 n.b. ci vuole un folder reveal (sotto gitignore) che contiene https://github.com/hakimel/reveal.js/archive/master.zip
+Attenzione: anche slides/videos e' sotto gitignore. Un clone fresco non e' eseguibile:
+mancano reveal (6.8 MB) e i due video (38 MB). Tenerne una copia zippata da qualche parte.
 
 Conferenza a Brescia il 3 febbraio 2023
+Conferenza dell'11 ottobre 2024
+Prossima conferenza: da fissare
+
 
 TODO:
-sezioni 3d: possibilità di nascondere il poliedro
-120celle: piccolo bachetto
+sezioni 4d: diagramma di Schlegel a fianco, con i punti di intersezione e il
+    poliedro-sezione. Restano 4 decisioni: (1) affiancati o riquadro d'angolo,
+    (2) le due viste ruotano insieme o no, (3) cosa fare con 120celle/600celle
+    che come Schlegel sono gomitoli, (4) il poliedro-sezione sempre visibile o
+    su un tasto. Nota: computeEdgeIntersections() calcola gia' i punti, e
+    PolychoronSimpleModel e' codice morto che fa gia' la proiezione giusta.
+guardare su bianco le 8 pagine non ancora giudicate: title, sequence2, yendred,
+    folding_tesseract, sphere, spherical-parallels, piu' gax e 120celle in uno
+    stato non iniziale
+riconciliare il fork di gutil.js (libs/ contro sections2/): sono divergenti in
+    entrambe le direzioni, quello in libs/ ha i colori per faccia, quello in
+    sections2/ ha il pivot pulito. Tocca gax, polychora-sections, sections,
+    yendred e sections2 insieme: dopo la conferenza
+gax-data.js contiene una terza copia della classe PolychoronData. Innocua oggi
+    perche' gax.html non carica anche polychora-data.js, ma se qualcuno lo
+    aggiunge e' un errore di sintassi immediato
+tre convenzioni diverse per avanti/indietro: x/z sulla sfera, s/a su dodecaedri
+    e 120celle, niente altrove
+la striscia dei 100 px a sinistra che regola w0 non e' segnalata da niente, ed
+    e' misurata in px CSS: su un proiettore a bassa risoluzione e' un bersaglio
+    piu' stretto
+120cells.js: tick() comincia con return, tutto il corpo e' morto
+cartelle morte in pages/: sequence, sections, dali (senza html), tori, test
+    (con 7.6 MB di babylon.max.js), template. E folding_cube/folding_cube.js,
+    che e' morto perche' l'html carica folding_cube2.js
+
 
 DONE:
 sezioni 4d: colori diversi per le facce
 sfera: aggiungere il punto luminoso in cima alla sfera
 gax: orientare secondo le facce (e aggiunti i colori)
+sezioni 3d: possibilita' di nascondere il poliedro (e' il tasto h)
+120celle: il piccolo bachetto -- forse. Il riempimento dell'anello partiva con
+    setInterval e non veniva mai fermato, quindi premendo s in fretta gli
+    intervalli dei passi precedenti continuavano a dipingere sopra un passo gia'
+    ridisegnato. Ora si interrompe. Da confermare che fosse quello.
+tutto il mazzo su fondo bianco
+titolo: facce del tesseratto in semitrasparenza
+gax: colori rifatti
+120 bolle: rifatte da capo
+
+
+DECISIONI PRESE (le cose che dal codice non si capiscono)
+
+Babylon fissato, niente piu' CDN.
+    libs/babylon-9.23.0.js per tutte le pagine, libs/babylon-5.45.0.js solo per
+    sphere. Prima c'erano tre sorgenti diverse e due non riproducibili: 15
+    pagine su cdn.babylonjs.com/babylon.js (cioe' l'ultima versione, che il 28
+    agosto era la 9.23.0 ricompilata quella mattina), yendred sulla nightly di
+    preview.babylonjs.com, sphere sulla copia locale. La 5.45.0 di sphere fu
+    congelata il 3 febbraio 2023, il giorno stesso della conferenza di Brescia,
+    perche' la build del CDN di allora rompeva quella pagina: non alzarla senza
+    provarla.
+
+Zero host esterni: il mazzo gira senza rete.
+    Tolti pep.js (polyfill del 2015, inutile su qualunque browser attuale),
+    babylon.gui (BABYLON.GUI non e' usato da nessuna parte) e MathJax (erano tre
+    formule su una slide sola, riscritte in HTML; main_30min lo caricava senza
+    averne nemmeno una).
+
+SLIDE_THEME in libs/common.js: 'light' | 'dark'.
+    Ogni pagina chiede themed(valoreChiaro, valoreScuro) e tiene tutti e due i
+    valori nel sorgente, quindi rimettere 'dark' riporta il mazzo com'era.
+    NON sostituire una themed() con il solo valore chiaro: e' quello che butta
+    via la via del ritorno. bubbles e' volutamente fuori dal tema, il suo
+    blending additivo ha bisogno di un fondo scuro.
+
+L'antialiasing e la scala di Reveal.
+    Reveal scala il mazzo con transform: scale(), e il browser ricampiona ogni
+    canvas come una texture con un filtro bilineare a 4 tap. Oltre il fattore 2
+    quel filtro sotto-campiona e *crea* la scalettatura invece di toglierla.
+    sequence2 faceva setHardwareScalingLevel(0.5), che portava la riduzione a
+    3.89x: era la pagina che sovracampionava di piu' ed era per questo la
+    peggiore. Ora fitBuffersToScreen() in common.js dimensiona il buffer ai
+    pixel fisici che il canvas occupa davvero (rapporto 1:1, niente
+    ricampionamento). Non rimettere setHardwareScalingLevel a mano nelle pagine.
+
+common.js: SETUP_DELAY_MS = 600 e la guardia sul doppio avvio.
+    Il ritardo serve a non compilare gli shader mentre la transizione e' in
+    corso; era 600 solo nella copia forkata di sections2, ora vale per tutte.
+    La guardia serve perche' Reveal manda slide:start piu' volte per la stessa
+    slide -- dal load dell'iframe, dal cambio slide, e da sync() a ogni resize:
+    attaccare il proiettore basta. Senza guardia il secondo costruiva un secondo
+    BABYLON.Engine sullo stesso canvas.
+
+gax non e' un policoro uniforme.
+    E' il grande esacosicoro {3,5/2,3}, uno dei dieci stellati di Schlafli-Hess
+    (l'acronimo di Bowers "gax" sta per grand hexacosichoron): 120 vertici, 720
+    spigoli, 1200 facce, 600 celle tetraedriche tutte uguali. Se sulla slide lo
+    presenti come uniforme, la didascalia va corretta. I colori ora vengono
+    dall'orientamento della faccia: in un policoro regolare l'iperpiano di una
+    cella e' perpendicolare alla direzione del suo centro, quindi quella
+    direzione ruotata e senza w E' la normale della faccia di sezione. Cosi' le
+    facce parallele condividono il colore. Prima la tinta veniva dalla w del
+    centro-cella normalizzata sull'arcobaleno intero, ma i centri stanno tutti
+    in w fra -0.125 e 0.125: si amplificava quasi-rumore fino al massimo
+    contrasto, e con 510 celle tagliate su 600 venivano coriandoli.
+
+120 bolle: additivo, non alpha blending.
+    Una pellicola di sapone aggiunge luce invece di toglierla, e l'additivo e'
+    indipendente dall'ordine -- che serve, perche' i 720 pentagoni sono istanze
+    di una sola mesh e escono in un'unica draw call non ordinata. C'e' anche un
+    passa-banda sulla scala delle celle: la proiezione stereografica le sparpaglia
+    su una gamma enorme, quelle vicine al polo diventano lenzuoli a tutto schermo
+    e quelle vicine all'antipode si accatastano in un bolo saturo.
+    L'oscillazione in xw e' stretta (0.13 rad) apposta: sul giro completo la
+    copertura dello schermo passava dal 23% al 97% e il grappolo spariva.
 
 
 metodi:

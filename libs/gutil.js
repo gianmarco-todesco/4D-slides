@@ -1,3 +1,13 @@
+// Shared Babylon geometry helpers.
+//
+// FORK WARNING: pages/sections2/gutil.js is a second, divergent copy of this
+// file -- not an older one. It has the tidier pivot (TransformNode instead of
+// Mesh) and the doc comments; this one has GeometricModel's per-face colours
+// (`colorsEnabled`), which that copy never got. Neither is a superset, so they
+// cannot simply be merged: reconciling them touches gax, polychora-sections,
+// sections, yendred and sections2 at once, and wants a test pass of its own.
+// Until then, a change made here probably has to be made there too.
+
 function showWorldAxis(size, scene) {
     var makeTextPlane = function(text, color, size) {
         var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);

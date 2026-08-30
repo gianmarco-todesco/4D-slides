@@ -1,5 +1,10 @@
 "use strict";
 
+// FORK WARNING: this is a second, divergent copy of libs/gutil.js -- see the
+// note at the top of that file. This copy has the tidier pivot and the doc
+// comments; libs/gutil.js has GeometricModel's per-face colours, which this one
+// never got. A change here probably has to be made there too.
+
 // helper function: create world axes and return their pivot
 function showWorldAxis(size, scene) {
     var makeTextPlane = function(text, color, size) {

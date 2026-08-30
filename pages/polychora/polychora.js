@@ -24,6 +24,7 @@ function setup() {
     let light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
+    applySlideBackground(scene)
     populateScene(scene)
     
     scene.registerBeforeRender(tick)
@@ -45,16 +46,23 @@ function cleanup() {
 function populateScene(scene) {
     slide.matrix = BABYLON.Matrix.Identity()
 
-    const th = -Math.asin(1/slide.focus)
-    const r = Math.cos(th) * slide.scaleFactor / (slide.focus + Math.sin(th))
-    const sphere = slide.sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {
-        diameter:r*2}, 
-        scene)
-    sphere.material = new BABYLON.StandardMaterial('sphere-mat', scene)
-    sphere.material.diffuseColor.set(0.8,0.7,0.9)
-    sphere.material.specularColor.set(1,1,1)
-    sphere.material.alpha = 0.2
-    sphere.material.specularPower = 120
+    // The circumscribed sphere is the outline of the projected 3-sphere, and
+    // against the dark background it also made the edges stand out. Against
+    // white it does the opposite: a flat 0.2 alpha laid over everything washes
+    // the edges out until they break up, which reads as aliasing rather than as
+    // the loss of contrast it actually is. So it belongs to the dark theme.
+    if(SLIDE_THEME === 'dark') {
+        const th = -Math.asin(1/slide.focus)
+        const r = Math.cos(th) * slide.scaleFactor / (slide.focus + Math.sin(th))
+        const sphere = slide.sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {
+            diameter:r*2}, 
+            scene)
+        sphere.material = new BABYLON.StandardMaterial('sphere-mat', scene)
+        sphere.material.diffuseColor.set(0.8,0.7,0.9)
+        sphere.material.specularColor.set(1,1,1)
+        sphere.material.alpha = 0.2
+        sphere.material.specularPower = 120
+    }
     
     slide.model = new PolychoronModel('tesseract', PolychoronData.p8, scene)
     slide.model.update()
@@ -82,7 +90,10 @@ function project(p) {
 
 
 
-function placeCylinder(cylinder, vStart, vEnd) {
+// Same as placeCylinder() in libs/gutil.js but without the radius
+// argument, so it must not share its name: this file is loaded after
+// gutil.js and would otherwise shadow it with a different signature.
+function placeUnitCylinder(cylinder, vStart, vEnd) {
     const distance = BABYLON.Vector3.Distance(vStart,vEnd )
     BABYLON.Vector3.LerpToRef(vStart,vEnd,0.5,cylinder.position)       
     cylinder.scaling.set(1,distance,1)
@@ -124,7 +135,11 @@ class PolychoronModel {
         let edge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.03, height:1}, scene)
         edge.parent = pivot
         mat = edge.material = new BABYLON.StandardMaterial(name+'edge-mat', scene)
-        mat.diffuseColor.set(0.6,0.6,0.6)
+        // Mid grey, lit, comes out nearly white: against the old dark background
+    // that was bright, against white it leaves almost no contrast and the edges
+    // break up into what looks like aliasing. Dark enough to read as a line,
+    // tinted towards the purple of the vertices.
+    mat.diffuseColor.set(...themed([0.25, 0.20, 0.30], [0.6, 0.6, 0.6]))
         this.edges = [edge]
         for(let i = 1; i<data.edges.length; i++) { 
             let inst = edge.createInstance(name+'-edge-inst-'+i)
@@ -167,13 +182,13 @@ class PolychoronModel {
         this.data.edges.forEach(([a,b],i)=>{
             let pa = this.vertices[a].position
             let pb = this.vertices[b].position
-            placeCylinder(this.edges[i], pa,pb)
+            placeUnitCylinder(this.edges[i], pa,pb)
         })
 
         this.bigEdges.forEach(edge => {
             let pa = this.vertices[edge.a].position
             let pb = this.vertices[edge.b].position
-            placeCylinder(edge, pa,pb)
+            placeUnitCylinder(edge, pa,pb)
         })
     }
 
@@ -197,7 +212,7 @@ class PolychoronModel {
                 inst.b = b
                 let pa = vertices[a].position
                 let pb = vertices[b].position
-                placeCylinder(inst, pa,pb)
+                placeUnitCylinder(inst, pa,pb)
                 bigEdges.push(inst)  
             }
         })
@@ -254,23 +269,6 @@ function onKeyEvent(kbInfo) {
     }
 }
 
-function getRotation(e1,e2,theta) {
-    const cs = Math.cos(theta)
-    const sn = Math.sin(theta)
-    const matrix = new BABYLON.Matrix()
-    for(let i=0;i<4;i++) {
-        for(let j=0;j<4;j++) {
-            let v
-            if(i==e1 && j==e1 || i==e2 && j==e2) v = cs
-            else if(i==e1 && j==e2) v = sn
-            else if(i==e2 && j==e1) v = -sn
-            else v = (i==j) ? 1 : 0
-            matrix.m[i*4+j] = v
-        }
-    }
-    return matrix
-
-}
 
 function handlePointer() {
     let status = 0
@@ -321,42 +319,3 @@ function handlePointer() {
     }
 
 }
-
-
-
-
-function showWorldAxis(size, scene) {
-    var makeTextPlane = function(text, color, size) {
-        var dynamicTexture = new BABYLON.DynamicTexture("DynamicTexture", 50, scene, true);
-        dynamicTexture.hasAlpha = true;
-        dynamicTexture.drawText(text, 5, 40, "bold 36px Arial", color , "transparent", true);
-        var plane = BABYLON.Mesh.CreatePlane("TextPlane", size, scene, true);
-        plane.material = new BABYLON.StandardMaterial("TextPlaneMaterial", scene);
-        plane.material.backFaceCulling = false;
-        plane.material.specularColor = new BABYLON.Color3(0, 0, 0);
-        plane.material.diffuseTexture = dynamicTexture;
-    return plane;
-     };
-    var axisX = BABYLON.Mesh.CreateLines("axisX", [ 
-      BABYLON.Vector3.Zero(), new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, 0.05 * size, 0), 
-      new BABYLON.Vector3(size, 0, 0), new BABYLON.Vector3(size * 0.95, -0.05 * size, 0)
-      ], scene);
-    axisX.color = new BABYLON.Color3(1, 0, 0);
-    var xChar = makeTextPlane("X", "red", size / 10);
-    xChar.position = new BABYLON.Vector3(0.9 * size, -0.05 * size, 0);
-    var axisY = BABYLON.Mesh.CreateLines("axisY", [
-        BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3( -0.05 * size, size * 0.95, 0), 
-        new BABYLON.Vector3(0, size, 0), new BABYLON.Vector3( 0.05 * size, size * 0.95, 0)
-        ], scene);
-    axisY.color = new BABYLON.Color3(0, 1, 0);
-    var yChar = makeTextPlane("Y", "green", size / 10);
-    yChar.position = new BABYLON.Vector3(0, 0.9 * size, -0.05 * size);
-    var axisZ = BABYLON.Mesh.CreateLines("axisZ", [
-        BABYLON.Vector3.Zero(), new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3( 0 , -0.05 * size, size * 0.95),
-        new BABYLON.Vector3(0, 0, size), new BABYLON.Vector3( 0, 0.05 * size, size * 0.95)
-        ], scene);
-    axisZ.color = new BABYLON.Color3(0, 0, 1);
-    var zChar = makeTextPlane("Z", "blue", size / 10);
-    zChar.position = new BABYLON.Vector3(0, 0.05 * size, 0.9 * size);
-};
-

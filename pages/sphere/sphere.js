@@ -9,6 +9,7 @@ function setup() {
     let canvas = slide.canvas = document.getElementById("renderCanvas")
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
+    applySlideBackground(scene)
 
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         -1.5 , 1.0, 10, 
@@ -39,8 +40,8 @@ function cleanup() {
     window.removeEventListener("resize", onResize)
     if(slide.engine) {
         slide.engine.stopRenderLoop()
-        slide.scene.dispose
-        slide.engine.dispose
+        slide.scene.dispose()
+        slide.engine.dispose()
         delete slide.scene
         delete slide.engine
     }
@@ -439,7 +440,7 @@ class FloorWithShadow {
         rttMaterial.ambientColor.set(0,0,0)
         rttMaterial.backFaceCulling = false
 
-        let bgColor = new BABYLON.Color3()
+        let bgColor = new BABYLON.Color4()   // Color3 here dropped the alpha on the way back
     
         
         rtt.onBeforeRender = (e) => {
@@ -448,7 +449,7 @@ class FloorWithShadow {
                 mesh.material =  rttMaterial
             })
             bgColor.copyFrom(scene.clearColor)
-            scene.clearColor.set(.1,.8,.95)
+            scene.clearColor.set(.1,.8,.95,1)
         };
         rtt.onAfterRender = () => {
             rtt.renderList.forEach(mesh => {

@@ -41,8 +41,11 @@ class D3Panel {
 
         this.engine.resize();
         engine.runRenderLoop(()=>{ 
-            if(canvas.width != canvas.clientWidth || 
-                canvas.height != canvas.clientHeight) engine.resize();
+            // canvas.width is in buffer pixels and clientWidth in CSS pixels:
+            // whenever the two scales differ this test is simply always true.
+            // Babylon returns immediately when the size has not changed, so ask
+            // it directly instead of guessing.
+            engine.resize();
             scene.render()
         });
 
@@ -74,7 +77,7 @@ class D3Panel {
 
         const scene = this.scene;
 
-        scene.clearColor.set(1,1,1)
+        applySlideBackground(scene)
 
         var light = new BABYLON.DirectionalLight("dir01", new BABYLON.Vector3(0, -1, 0), scene);
         light.position = new BABYLON.Vector3(0, 10, 0);

@@ -10,6 +10,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
+    applySlideBackground(scene)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         Math.PI / 2, Math.PI / 2, 3, 
@@ -37,6 +38,7 @@ function setup() {
 
 function cleanup() {
     window.removeEventListener("resize", onResize)
+    if(slide.stepManager) slide.stepManager.stopPendingFill()
     if(slide.engine) {
         slide.engine.stopRenderLoop()
         slide.scene.dispose()
@@ -327,6 +329,7 @@ class PolychoronStructure {
 class StepManager {
     constructor() {
         this.step = -1
+        this.fillIntervalId = undefined
     }
     next() { this.setStep(this.step+1) }
     prev() { this.setStep(this.step-1) }
@@ -348,6 +351,11 @@ class StepManager {
         if(this.step == index) return
         const oldStep = this.step
         this.step = index
+
+        // A ring fill still running from the previous step would keep painting
+        // cells after the repaint below cleared them, so what was on screen no
+        // longer matched the step. Pressing 's' twice quickly was enough.
+        this.stopPendingFill()
 
         const md = slide.model
         const pcs = md.pcs
@@ -375,15 +383,21 @@ class StepManager {
     completeRing(ringIndex, start, colorIndex) {
         let i = start
         const ring = slide.model.pcs.rings[ringIndex]
-        let intervalId = setInterval(() => {
+        this.fillIntervalId = setInterval(() => {
             i++
-            console.log("beep", i)
             if(i>=10) {
-                clearInterval(intervalId)
+                this.stopPendingFill()
             } else {
                 slide.model.showCells([ring[i]],colorIndex)
             }
         }, 50)
+    }
+
+    stopPendingFill() {
+        if(this.fillIntervalId !== undefined) {
+            clearInterval(this.fillIntervalId)
+            this.fillIntervalId = undefined
+        }
     }
 }
 

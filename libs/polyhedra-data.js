@@ -1,6 +1,9 @@
+"use strict";
 
 class PolyhedronData {
     constructor() {}
+
+    // compute edges[] from faces[]
     computeEdges() {
         const n = this.vertices.length
         const tb={}
@@ -21,6 +24,10 @@ class PolyhedronData {
         })        
     }
 
+    // compute the (faceIndex-th) face transformation matrix:
+    // mat * (0,0,0) = fc = center of the face * scaleFactor
+    // mat * (0,0,1) = fc + face normal
+    // mat * (1,0,0) = fc + direction from face center to face first vertex
     getFaceMatrix(faceIndex, scaleFactor) {
         scaleFactor = scaleFactor || 1.0
         const vertices = this.vertices
@@ -34,6 +41,46 @@ class PolyhedronData {
             e1.x,e1.y,e1.z,0,
             e2.x,e2.y,e2.z,0,
             fc.x*scaleFactor,fc.y*scaleFactor,fc.z*scaleFactor,1)
+    }
+
+    // return the Quaternion that rotates the solid so that
+    // vertex with index idx0 points to the y-axis and vertex with index idx1
+    // lies in the xy-plane
+    getVertexOrientation(idx0, idx1) {   
+        let v0 = this.vertices[idx0].clone().normalize();
+        let v1 = this.vertices[idx1];
+        v1 = v1.subtract(v0.scale(BABYLON.Vector3.Dot(v0,v1))).normalize();
+        let quaternion = BABYLON.Quaternion.FromLookDirectionLH(v0,v1).invert();
+        return BABYLON.Quaternion.FromEulerAngles(Math.PI/2,Math.PI/2,0).multiply(quaternion);    
+    }
+
+
+    // return the Quaternion that rotates the solid so that
+    // the midpoint of the edge with index idx points to the y-axis and edge itself is parallel to the x axis
+    getEdgeOrientation(idx) {
+        const [a,b] = this.edges[idx];
+        const pa = this.vertices[a], pb = this.vertices[b];
+        let v0 = BABYLON.Vector3.Lerp(pa,pb,0.5).normalize();
+        let v1 = pb.subtract(pa);
+        v1 = v1.subtract(v0.scale(BABYLON.Vector3.Dot(v0,v1))).normalize();
+        let quaternion = BABYLON.Quaternion.FromLookDirectionLH(v0,v1).invert();
+        return BABYLON.Quaternion.FromEulerAngles(Math.PI/2,Math.PI/2,0).multiply(quaternion);    
+    }
+
+    // return the Quaternion that rotates the solid so that
+    // the midpoint of the face with index idx points to the y-axis and the 
+    // vIndex-th vertex of the face lies in the xy plane
+    getFaceOrientation(faceIdx, vIndex) {
+        const face = this.faces[faceIdx];
+        const pts = face.map(i=>this.vertices[i]);
+        const faceCenter = new BABYLON.Vector3(0,0,0);
+        pts.forEach(p=>faceCenter.addInPlace(p));
+        faceCenter.scaleInPlace(1/pts.length);
+        let v0 = faceCenter.clone().normalize();
+        let v1 = pts[vIndex].subtract(faceCenter);
+        v1 = v1.subtract(v0.scale(BABYLON.Vector3.Dot(v0,v1))).normalize();
+        let quaternion = BABYLON.Quaternion.FromLookDirectionLH(v0,v1).invert();
+        return BABYLON.Quaternion.FromEulerAngles(Math.PI/2,Math.PI/2,0).multiply(quaternion);    
     }
 }
 

@@ -11,6 +11,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
+    applySlideBackground(scene)
     
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         1.34,1.07, 10, 

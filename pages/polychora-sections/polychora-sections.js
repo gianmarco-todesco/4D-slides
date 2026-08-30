@@ -8,6 +8,7 @@ function setup() {
     const canvas = slide.canvas = document.getElementById("renderCanvas")
     const engine = slide.engine = new BABYLON.Engine(canvas, true)
     const scene = slide.scene = new BABYLON.Scene(engine)
+    applySlideBackground(scene)
 
     const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         1.5, 1.38, 4, 
@@ -33,9 +34,9 @@ function setup() {
 function cleanup() {
     window.removeEventListener("resize", onResize)
     slide.engine.stopRenderLoop()
-    slide.scene.dispose
+    slide.scene.dispose()
     delete slide.scene
-    slide.engine.dispose
+    slide.engine.dispose()
     delete slide.engine    
 }
 
