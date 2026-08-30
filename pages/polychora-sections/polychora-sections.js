@@ -1,7 +1,23 @@
 "use strict";
 
+const MASCHERA_SEZIONE  = 0x1
+const MASCHERA_SCHLEGEL = 0x2
+
 const slide = {
-    name:"4D sections"
+    name:"4D sections",
+
+    // Framing. Sharing the canvas costs the section half its width, so the
+    // camera moves closer rather than further: measured against the panel, a
+    // radius of 4 left the section looking lost inside its half.
+    raggioSingolo: 4,
+    raggioDoppio: 3.4,
+
+    // The Schlegel projection: eye on the w axis at -distanza, looking at w = 0.
+    // The closer distanza is to the polychoron, the more nested the picture.
+    distanzaSchlegel: 1.15,
+    fuocoSchlegel: 2.4,
+    rapportoRaggioSchlegel: 2.4,
+    spessoreSchlegel: 0.055
 }
 
 function setup() {
@@ -10,19 +26,38 @@ function setup() {
     const scene = slide.scene = new BABYLON.Scene(engine)
     applySlideBackground(scene)
 
-    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
-        1.5, 1.38, 4, 
+    // Two panels in one scene: the section on the left, the Schlegel diagram of
+    // the polychoron on the right. Two cameras with their own viewport rather
+    // than two canvases, so there is still one engine and one render loop.
+    //
+    // The section stays on the LEFT on purpose: the drag that moves the section
+    // plane lives in the leftmost 100 px, and putting the diagram there would
+    // have meant changing that gesture.
+    const camera = slide.camera = new BABYLON.ArcRotateCamera("Camera",
+        1.5, 1.38, 4,
         new BABYLON.Vector3(0,0,0), scene)
     camera.attachControl(canvas, true)
     camera.wheelPrecision=20
     camera.lowerRadiusLimit = 2
+    camera.layerMask = MASCHERA_SEZIONE
+
+    // Only this camera drives the pointer; the other mirrors it. One set of
+    // controls, and picking has a single unambiguous answer.
+    scene.cameraToUseForPointers = camera
+
+    const cameraSchlegel = slide.cameraSchlegel = new BABYLON.ArcRotateCamera(
+        "CameraSchlegel", 1.5, 1.38, 4, new BABYLON.Vector3(0,0,0), scene)
+    cameraSchlegel.layerMask = MASCHERA_SCHLEGEL
+
+    scene.activeCameras = [camera, cameraSchlegel]
     
     const light1 = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 10, 1), scene)
     const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
     populateScene()
-    
+    disponiPannelli()
+
     scene.registerBeforeRender(tick)
     scene.onKeyboardObservable.add(onKeyEvent);
     handlePointer()
@@ -49,7 +84,37 @@ function populateScene() {
     const scene = slide.scene
     slide.model = new PolychoronSectionModel('model',PolychoronData.p8, scene)
     slide.model.matrix = BABYLON.Matrix.Identity();
+    // The identity matrix is deliberate -- it makes the opening section a clean
+    // axis-aligned cube -- but it puts every vertex at w = +-0.5, and the
+    // constructor leaves w0 at 0.5, which is the very top of that range: no edge
+    // is crossed and the panel opens empty. adjustw() cannot help, it only nudges
+    // w0 off a vertex layer.
+    slide.model.w0 = 0.2;
     slide.model.update();
+    applicaMaschera(slide.model, MASCHERA_SEZIONE)
+
+    slide.schlegel = new PolychoronSchlegelModel('schlegel', PolychoronData.p8, scene)
+}
+
+// Both models are built on GeometricModel, which creates its instances lazily as
+// vertices and edges are added, so the mask has to be reapplied after every
+// rebuild rather than set once at construction.
+function applicaMaschera(model, maschera) {
+    const tocca = m => { if(m) m.layerMask = maschera }
+    tocca(model.pivot); tocca(model.dot); tocca(model.edge); tocca(model.facesMesh)
+    model.vertices.forEach(tocca)
+    model.edges.forEach(tocca)
+}
+
+// The diagram is shown only where it can be read. With 720 and 1200 edges the
+// 600-cell and the 120-cell come out as a ball of wool, so for those the
+// section takes the whole canvas back.
+function disponiPannelli() {
+    const V = BABYLON.Viewport
+    const doppio = slide.schlegel && slide.schlegel.visibile
+    slide.camera.viewport = doppio ? new V(0, 0, 0.5, 1) : new V(0, 0, 1, 1)
+    slide.cameraSchlegel.viewport = doppio ? new V(0.5, 0, 0.5, 1) : new V(0, 0, 0, 0)
+    slide.camera.radius = doppio ? slide.raggioDoppio : slide.raggioSingolo
 }
 
 let stop = false
@@ -58,6 +123,20 @@ function tick() {
     if(slide.assetController) {
         if(!slide.assetController.tick()) slide.assetController = null;
     }
+
+    // The two views are locked together. Rather than hunt down every place that
+    // moves the section -- the w0 drag, the rotation drag, setShape, the
+    // AssetController -- watch what the section model actually holds and rebuild
+    // the diagram when it changes.
+    const m = slide.model, s = slide.schlegel
+    if(s && s.visibile &&
+       (s.w0Ultimo !== m.w0 || !s.matriceUltima || !m.matrix.equals(s.matriceUltima))) {
+        s.update(m.matrix, m.w0)
+    }
+    const cs = slide.cameraSchlegel
+    cs.alpha = slide.camera.alpha
+    cs.beta = slide.camera.beta
+    cs.radius = slide.camera.radius * slide.rapportoRaggioSchlegel
 }
 
 // ============================================================================
@@ -147,6 +226,9 @@ function onKeyEvent(kbInfo) {
                 else if(key == 56) data = PolychoronData.p600
                 else break;
                 slide.model.setShape(data)
+                applicaMaschera(slide.model, MASCHERA_SEZIONE)
+                slide.schlegel.setShape(data)
+                disponiPannelli()
             }
             else if(kbInfo.event.key == "v") {
                 slide.assetController = new AssetController(slide.model);
@@ -164,25 +246,104 @@ function onKeyEvent(kbInfo) {
 
 // ============================================================================
 
-class PolychoronSimpleModel extends GeometricModel {
-    constructor(data) {
-        super()
+// The Schlegel diagram, and the section drawn inside it.
+//
+// This replaces PolychoronSimpleModel, which sat here unused and already did the
+// projection: a central projection from a point on the w axis, which sends the
+// cell nearest the eye out to the boundary and nests the others inside it. For
+// the tesseract that is the cube-within-a-cube picture.
+//
+// Two GeometricModels, because each one carries a single dot material and a
+// single edge material and the two layers want different weights:
+//   base     the polychoron itself, pale and thin, staying out of the way
+//   sezione  the points where the hyperplane cuts the edges, and the polygons
+//            they trace -- the same solid that the other panel shows in full
+class PolychoronSchlegelModel {
+    constructor(name, data, scene) {
+        this.scene = scene
+        this.base = new GeometricModel(name + '-base', scene)
+        this.sezione = new GeometricModel(name + '-sez', scene)
+
+        this.base.dot.material.diffuseColor.set(...themed([0.62,0.58,0.70],[0.5,0.5,0.6]))
+        this.base.edge.material.diffuseColor.set(...themed([0.72,0.70,0.78],[0.45,0.45,0.55]))
+        this.sezione.dot.material.diffuseColor.set(...themed([0.85,0.25,0.15],[1.0,0.45,0.3]))
+        // Same teal the section model uses for its own edges: it is literally
+        // the same solid as the one in the other panel, and the eye should
+        // join the two without being told.
+        this.sezione.edge.material.diffuseColor.set(...themed([0.30,0.60,0.60],[0.4,0.8,0.8]))
+
+        this.w0Ultimo = undefined
+        this.matriceUltima = undefined
+        this.setShape(data)
+    }
+
+    setShape(data) {
         this.data = data
-        this.update();
+        // Keys 1-4 only: the 120-cell and the 600-cell are unreadable here.
+        this.visibile = data.cells.length <= 24
+        this.w0Ultimo = undefined
+        this.matriceUltima = undefined
     }
-    project(p4) {
-        const k = 10.0/(4.0 + p4.w)
-        return new BABYLON.Vector3(p4.x*k,p4.y*k,p4.z*k)
+
+    // Central projection from (0,0,0,-distanza) onto the hyperplane w = 0.
+    proietta(p4) {
+        const k = slide.fuocoSchlegel / (slide.distanzaSchlegel + p4.w)
+        return new BABYLON.Vector3(p4.x*k, p4.y*k, p4.z*k)
     }
-    update() {
-        const me = this
-        const pts = this.data.vertices.map(p=>me.project(p))
-        this.beginUpdate()
-        pts.forEach(p=>me.addVertex(p,0.1))
-        this.data.edges.forEach(([a,b]) => {me.addEdge(pts[a],pts[b],0.06)})
-        this.endUpdate();
+
+    update(matrix, w0) {
+        const T = BABYLON.Vector4.Transform
+        const data = this.data
+        const pts4 = data.vertices.map(p => T(matrix, p))
+        const pts = pts4.map(p => this.proietta(p))
+
+        const rV = slide.spessoreSchlegel, rE = rV * 0.45
+
+        this.base.beginUpdate()
+        pts.forEach(p => this.base.addVertex(p, rV))
+        data.edges.forEach(([a,b]) => this.base.addEdge(pts[a], pts[b], rE))
+        this.base.endUpdate()
+
+        // Where the hyperplane cuts an edge. The point has w = w0 by
+        // construction, so the 4D point is just the interpolated xyz with w0.
+        const tagli = {}
+        const m = pts4.length
+        this.sezione.beginUpdate()
+        data.edges.forEach(([a,b]) => {
+            const wa = pts4[a].w, wb = pts4[b].w
+            if((wa - w0) * (wb - w0) >= 0) return
+            const s = (w0 - wa) / (wb - wa)
+            const q = new BABYLON.Vector4(
+                pts4[a].x + (pts4[b].x - pts4[a].x) * s,
+                pts4[a].y + (pts4[b].y - pts4[a].y) * s,
+                pts4[a].z + (pts4[b].z - pts4[a].z) * s,
+                w0)
+            tagli[a*m + b] = tagli[b*m + a] = this.proietta(q)
+        })
+        Object.values(tagli).forEach(p => this.sezione.addVertex(p, rV * 1.7))
+
+        // A plane meets the boundary of a convex polygon in exactly two points,
+        // so a face contributes either one edge of the section or none at all.
+        data.faces.forEach(f => {
+            let a = f[f.length-1]
+            const q = []
+            f.forEach(b => {
+                const p = tagli[a*m + b]
+                if(p !== undefined) q.push(p)
+                a = b
+            })
+            if(q.length === 2) this.sezione.addEdge(q[0], q[1], rE * 1.6)
+        })
+        this.sezione.endUpdate()
+
+        applicaMaschera(this.base, MASCHERA_SCHLEGEL)
+        applicaMaschera(this.sezione, MASCHERA_SCHLEGEL)
+
+        this.w0Ultimo = w0
+        this.matriceUltima = matrix.clone()
     }
 }
+
 
 BABYLON.Vector4.Transform = function(mat, v4) {
     const m = mat.m

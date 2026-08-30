@@ -12,12 +12,6 @@ Prossima conferenza: da fissare
 
 
 TODO:
-sezioni 4d: diagramma di Schlegel a fianco, con i punti di intersezione e il
-    poliedro-sezione. Restano 4 decisioni: (1) affiancati o riquadro d'angolo,
-    (2) le due viste ruotano insieme o no, (3) cosa fare con 120celle/600celle
-    che come Schlegel sono gomitoli, (4) il poliedro-sezione sempre visibile o
-    su un tasto. Nota: computeEdgeIntersections() calcola gia' i punti, e
-    PolychoronSimpleModel e' codice morto che fa gia' la proiezione giusta.
 guardare su bianco le 8 pagine non ancora giudicate: title, sequence2, yendred,
     folding_tesseract, sphere, spherical-parallels, piu' gax e 120celle in uno
     stato non iniziale
@@ -52,6 +46,8 @@ tutto il mazzo su fondo bianco
 titolo: facce del tesseratto in semitrasparenza
 gax: colori rifatti
 120 bolle: rifatte da capo
+sezioni 4d: diagramma di Schlegel a fianco, con i punti di intersezione e il
+    poliedro-sezione
 
 
 DECISIONI PRESE (le cose che dal codice non si capiscono)
@@ -109,6 +105,35 @@ gax non e' un policoro uniforme.
     centro-cella normalizzata sull'arcobaleno intero, ma i centri stanno tutti
     in w fra -0.125 e 0.125: si amplificava quasi-rumore fino al massimo
     contrasto, e con 510 celle tagliate su 600 venivano coriandoli.
+
+Il diagramma di Schlegel nelle sezioni 4D.
+    Quattro scelte, tutte reversibili cambiando una costante in cima al file.
+    (1) I due pannelli sono affiancati e la SEZIONE STA A SINISTRA: non e'
+    estetica, e' che il trascinamento che muove w0 vive nei 100 px piu' a
+    sinistra, e mettere il diagramma li' avrebbe costretto a cambiare quel gesto.
+    (2) Le due viste sono legate: stessa matrice 4D, stessa orbita. Una sola
+    camera prende il puntatore (scene.cameraToUseForPointers), l'altra la copia:
+    cosi' i comandi sono uno solo e il picking ha una risposta sola.
+    (3) Il diagramma si vede solo per i tasti 1-4. Il 120-celle e il 600-celle
+    hanno 1200 e 720 spigoli e come Schlegel sono gomitoli; per loro il pannello
+    sparisce e la sezione si riprende tutto il canvas.
+    (4) Il poliedro-sezione e' sempre disegnato dentro il diagramma, nello
+    stesso verdeacqua che la sezione usa per i propri spigoli: e' lo stesso
+    solido nei due pannelli e l'occhio deve unirli senza che glielo si dica.
+    Il tutto sta in una scena sola con due camere e due viewport, separate da
+    layerMask. La maschera va riapplicata dopo ogni ricostruzione, perche'
+    GeometricModel crea le sue istanze via via che si aggiungono vertici.
+    Il diagramma si riallinea da tick(): invece di rincorrere tutti i punti che
+    muovono la sezione (w0, rotazione, setShape, AssetController) si guarda cosa
+    contiene il modello della sezione e si ricostruisce quando cambia.
+
+La sezione partiva vuota, ed era un difetto vecchio.
+    populateScene() forza la matrice all'identita' -- di proposito, cosi' la
+    sezione d'apertura e' un cubo allineato agli assi -- ma questo mette tutti i
+    vertici a w = +-0.5, e il costruttore lascia w0 a 0.5, che e' l'estremo
+    superiore di quell'intervallo: nessuno spigolo viene attraversato. adjustw()
+    non puo' salvare la situazione, sposta w0 solo quando cade esattamente su un
+    vertice. Ora populateScene() mette w0 a 0.2.
 
 120 bolle: additivo, non alpha blending.
     Una pellicola di sapone aggiunge luce invece di toglierla, e l'additivo e'
