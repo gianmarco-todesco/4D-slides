@@ -1,0 +1,6 @@
+# Le copie di Babylon sono dipendenze fissate, non sorgenti del progetto: vanno
+# tenute byte-identiche a quello che e' stato scaricato. Senza questa riga git
+# normalizza i fine riga e al checkout successivo il file non e' piu' lo stesso
+# di quello servito dal CDN, il che vanifica meta' del senso di fissare una
+# versione.
+babylon*.js binary
