@@ -1,7 +1,10 @@
 
 n.b. ci vuole un folder reveal (sotto gitignore) che contiene https://github.com/hakimel/reveal.js/archive/master.zip
 Attenzione: anche slides/videos e' sotto gitignore. Un clone fresco non e' eseguibile:
-mancano reveal (6.8 MB) e i due video (38 MB). Tenerne una copia zippata da qualche parte.
+mancano reveal (6.8 MB) e i due video (38 MB).
+Backup autosufficiente: ../4D-slides-backup-2026-08-28.zip (46 MB). Si scompatta
+e si fa doppio clic su avvia.bat: non serve ne' rete ne' git ne' niente installato.
+Va rifatto quando i video o reveal cambiano.
 
 Conferenza a Brescia il 3 febbraio 2023
 Conferenza dell'11 ottobre 2024
