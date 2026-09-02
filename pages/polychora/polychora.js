@@ -12,8 +12,7 @@ function setup() {
     let canvas = slide.canvas = document.getElementById("renderCanvas")
     let engine = slide.engine = new BABYLON.Engine(canvas, true)
     let scene = slide.scene = new BABYLON.Scene(engine)
-
-
+    
     let camera = slide.camera = new BABYLON.ArcRotateCamera("Camera", 
         1.8,1.15, 6, 
         new BABYLON.Vector3(0,0,0), scene)
@@ -25,6 +24,7 @@ function setup() {
     light2.parent = camera
 
     applySlideBackground(scene)
+    // scene.clearColor.set(0,0,0,1)
     populateScene(scene)
     
     scene.registerBeforeRender(tick)
@@ -132,7 +132,7 @@ class PolychoronModel {
             this.vertices.push(inst)
         }
         
-        let edge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.03, height:1}, scene)
+        let edge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.03*2, height:1}, scene)
         edge.parent = pivot
         mat = edge.material = new BABYLON.StandardMaterial(name+'edge-mat', scene)
         // Mid grey, lit, comes out nearly white: against the old dark background

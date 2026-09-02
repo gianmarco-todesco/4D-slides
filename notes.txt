@@ -81,9 +81,23 @@ L'antialiasing e la scala di Reveal.
     quel filtro sotto-campiona e *crea* la scalettatura invece di toglierla.
     sequence2 faceva setHardwareScalingLevel(0.5), che portava la riduzione a
     3.89x: era la pagina che sovracampionava di piu' ed era per questo la
-    peggiore. Ora fitBuffersToScreen() in common.js dimensiona il buffer ai
-    pixel fisici che il canvas occupa davvero (rapporto 1:1, niente
-    ricampionamento). Non rimettere setHardwareScalingLevel a mano nelle pagine.
+    peggiore. fitBuffersToScreen() in common.js mira percio' a un rapporto di 2,
+    non di 1: 2:1 e' l'unica riduzione che quel filtro gestisce bene, perche' ogni
+    pixel in uscita e' la media di un blocco 2x2, e regala un supersampling vero
+    sopra l'MSAA. Il primo tentativo mirava a 1:1, che lasciava solo l'MSAA: in
+    finestra piccola i policora si vedevano peggio di prima, era una regressione.
+    C'e' un tetto (SUPERSAMPLING_MAX_LATO = 2048) perche' il costo va col
+    quadrato: a schermo pieno il raddoppio chiederebbe un buffer da 3686 px e le
+    slide pesanti girano su grafica integrata. Il tetto si applica per canvas,
+    quindi sequence2 -- che ne occupa meta' -- resta a 2 anche a schermo pieno,
+    mentre le pagine a tutta larghezza scendono a 1, cioe' quello che facevano
+    prima di tutte queste modifiche.
+    Il costo GPU non sono riuscito a misurarlo: ne' cronometrando scene.render()
+    ne' con gl.finish() vengono numeri sensati (le pagine risultano piu' veloci
+    quadruplicando i pixel), perche' il pannello del browser di Claude non compone
+    e il lavoro viene scartato. Se a schermo pieno vuoi provare il 2x anche sulle
+    pagine grandi, alza il tetto a 4096 e giudica con i tuoi occhi se resta fluido.
+    Non rimettere setHardwareScalingLevel a mano nelle pagine.
 
 common.js: SETUP_DELAY_MS = 600 e la guardia sul doppio avvio.
     Il ritardo serve a non compilare gli shader mentre la transizione e' in

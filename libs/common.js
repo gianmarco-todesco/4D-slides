@@ -133,13 +133,27 @@ function getRenderScale() {
     return 1
 }
 
+// Render 2x the pixels the canvas covers, when that fits, and 1x when it does
+// not. 2:1 is the one reduction the compositor's four-tap filter handles
+// properly -- each output pixel is the average of a 2x2 block -- so it buys real
+// supersampling on top of the MSAA. Anything between 1 and 2 lands on a
+// half-pixel grid and anything past 2 undersamples, which is what made the
+// tesseract slide jagged in the first place.
+//
+// A cap is needed because the cost is the square: full screen at 1920 the
+// doubling would ask for a 3840-wide buffer, four times the fragments, and the
+// heavy slides (720 soap films, the 120-cell) run on integrated graphics.
+const SUPERSAMPLING_MAX_LATO = 2048
+
 function fitBuffersToScreen() {
     if(typeof BABYLON === "undefined" || !BABYLON.EngineStore) return
-    const level = 1 / (getRenderScale() * (window.devicePixelRatio || 1))
-    // Babylon removes an engine from Instances when it is disposed, so every
-    // entry here is live.
+    const scala = getRenderScale() * (window.devicePixelRatio || 1)
     BABYLON.EngineStore.Instances.forEach(engine => {
-        engine.setHardwareScalingLevel(level)
+        const canvas = engine.getRenderingCanvas()
+        if(!canvas) return
+        const latoFisico = Math.max(canvas.clientWidth, canvas.clientHeight) * scala
+        const fattore = (latoFisico * 2 <= SUPERSAMPLING_MAX_LATO) ? 2 : 1
+        engine.setHardwareScalingLevel(1 / (scala * fattore))
         engine.resize()
     })
 }
