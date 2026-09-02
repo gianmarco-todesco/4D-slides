@@ -134,6 +134,24 @@ Il diagramma di Schlegel nelle sezioni 4D.
     spigolo, una faccia o una cella a incontrare per primo lo spazio della
     sezione.
 
+La maschera appartiene al modello, non a chi lo chiama.
+    GeometricModel crea le sue istanze via via che i conteggi crescono, e una
+    istanza nuova nasce con la layerMask di default 0x0FFFFFFF, che in AND con
+    la maschera del diagramma non fa zero: quindi la camera di destra la vede.
+    Bastava premere v -- l'animazione porta la sezione del tesseratto da 8 a 12
+    vertici -- e i quattro punti e i sei spigoli nuovi comparivano dentro il cubo
+    piccolo del diagramma, azzurroverdi e senza pallini. Ora update() riapplica
+    la maschera a ogni ricostruzione: lasciarlo ai punti di chiamata e' il modo
+    in cui e' sfuggito.
+
+I due pannelli devono descrivere lo STESSO iperpiano.
+    adjustw() sposta il piano quando cade esattamente su un vertice, e il valore
+    spostato e' quello con cui la sezione viene davvero costruita: va pubblicato
+    (model.w0Usato). Leggendo il w0 grezzo le due viste andavano in disaccordo
+    proprio nella situazione che il tasto v prepara di proposito. Con w0 a 0 --
+    il valore che setShape lascia -- sei vertici del tesseratto ruotato cadono
+    esattamente sul piano e il diagramma non trovava piu' niente da tagliare.
+
 Due trappole del puntatore, con due viewport.
     Babylon non passa il controllo da una camera all'altra a meta' di un gesto
     gia' cominciato: provandoci orbitano tutte e due. Percio' la camera del

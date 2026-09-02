@@ -119,7 +119,6 @@ function populateScene() {
     // w0 off a vertex layer.
     slide.model.w0 = 0.2;
     slide.model.update();
-    applicaMaschera(slide.model, MASCHERA_SEZIONE)
 
     slide.schlegel = new PolychoronSchlegelModel('schlegel', PolychoronData.p8, scene)
 }
@@ -158,9 +157,9 @@ function tick() {
     // cameras are NOT linked: only the cut points travel from one panel to the
     // other, not the point of view.
     const m = slide.model, s = slide.schlegel
-    if(s && s.visibile &&
-       (s.w0Ultimo !== m.w0 || !s.matriceUltima || !m.matrix.equals(s.matriceUltima))) {
-        s.update(m.matrix, m.w0)
+    if(s && s.visibile && m.w0Usato !== undefined &&
+       (s.w0Ultimo !== m.w0Usato || !s.matriceUltima || !m.matrix.equals(s.matriceUltima))) {
+        s.update(m.matrix, m.w0Usato)
     }
 }
 
@@ -288,7 +287,6 @@ function onKeyEvent(kbInfo) {
                 else if(key == 56) data = PolychoronData.p600
                 else break;
                 slide.model.setShape(data)
-                applicaMaschera(slide.model, MASCHERA_SEZIONE)
                 slide.schlegel.setShape(data)
                 disponiPannelli()
             }
@@ -377,7 +375,11 @@ class PolychoronSchlegelModel {
         // values, then the point is placed at that same fraction along the
         // UNROTATED edge: same point of the solid, drawn in the canonical
         // diagram.
+        // tagli is keyed both ways round so a face can look an edge up in either
+        // direction; the points themselves are collected separately, or every one
+        // of them would be drawn twice.
         const tagli = {}
+        const punti = []
         const m = data.vertices.length
         this.sezione.beginUpdate()
         data.edges.forEach(([a,b]) => {
@@ -389,9 +391,11 @@ class PolychoronSchlegelModel {
                 va.y + (vb.y - va.y) * s,
                 va.z + (vb.z - va.z) * s,
                 va.w + (vb.w - va.w) * s)
-            tagli[a*m + b] = tagli[b*m + a] = this.proietta(q)
+            const p = this.proietta(q)
+            tagli[a*m + b] = tagli[b*m + a] = p
+            punti.push(p)
         })
-        Object.values(tagli).forEach(p => this.sezione.addVertex(p, rV * 1.7))
+        punti.forEach(p => this.sezione.addVertex(p, rV * 1.7))
 
         // A plane meets the boundary of a convex polygon in exactly two points,
         // so a face contributes either one edge of the section or none at all.
@@ -428,6 +432,15 @@ BABYLON.Vector4.Transform = function(mat, v4) {
 class PolychoronSectionModel extends GeometricModel {
     constructor(name, data, scene) {
         super(name,scene,true); // colorsEnabled = true
+        // The mask belongs to the model, and update() reapplies it. GeometricModel
+        // creates its instances as the counts grow, and a new instance is born
+        // with Babylon's default mask of 0x0FFFFFFF, which the diagram's camera
+        // also matches -- so any rebuild that added vertices leaked the section
+        // into the right panel. Pressing v was enough: the animation takes the
+        // tesseract's section from 8 vertices to 12, and the four new dots and
+        // six new edges appeared inside the small cube of the diagram, teal and
+        // dotless. Leaving that to the callers is how it got missed.
+        this.maschera = MASCHERA_SEZIONE
         this.data = data
         this.matrix = BABYLON.Matrix.Identity()
         this.w0 = 0.
@@ -498,7 +511,14 @@ class PolychoronSectionModel extends GeometricModel {
         
         const Transform = BABYLON.Vector4.Transform
         const pts4 = this.data.vertices.map(p=>Transform(mat,p))
+        // adjustw nudges the plane off a vertex layer, and the nudged value is the
+        // one the section is actually built from. It has to be published, because
+        // the Schlegel diagram must describe the SAME hyperplane: reading the raw
+        // w0 made the two panels disagree exactly when a vertex sits on the plane,
+        // which is the situation the v key sets up on purpose. With w0 at 0 -- the
+        // value setShape leaves behind -- the diagram found nothing to cut at all.
         let w0 = this.adjustw(this.w0, pts4);
+        this.w0Usato = w0;
         this.setCellColors();
         
         // compute edge points : intersections along edges. edgePoints = [(a,b,p),...]
@@ -568,6 +588,7 @@ class PolychoronSectionModel extends GeometricModel {
         })
         
         this.endUpdate()
+        applicaMaschera(this, this.maschera)
     }
 
     adjustw(w0,pts) {
