@@ -24,7 +24,15 @@ function setup() {
     light2.parent = camera
 
     applySlideBackground(scene)
-    // scene.clearColor.set(0,0,0,1)
+    // Sfondo sfumato invece del colore piatto. Il quadrilatero copre tutto il
+    // campo visivo, quindi il clearColor qui sopra non si vede piu': resta come
+    // fondo di sicurezza per i fotogrammi in cui lo shader e' ancora in
+    // compilazione. Sul tema scuro il viola in alto richiama quello dei vertici;
+    // sul tema chiaro la sfumatura e' appena accennata, per non mettersi a
+    // competere con l'inchiostro scuro degli spigoli.
+    slide.sfondo = createGradientBackground(slide.camera, themed(
+        [[1.00, 1.00, 1.00], [1.00, 1.00, 1.00], [0.90, 0.90, 0.94], [0.90, 0.90, 0.94]],
+        [[0.10, 0.10, 0.22], [0.13, 0.09, 0.20], [0.02, 0.02, 0.04], [0.02, 0.02, 0.04]]))
     populateScene(scene)
     
     scene.registerBeforeRender(tick)

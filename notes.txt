@@ -121,7 +121,10 @@ createGradientBackground() in libs/common.js: sfondo sfumato condiviso.
         niente in nessun ordine di disegno.
     Su polychora-sections, che ha due camere con layerMask diverse, allo sfondo
     va assegnata a mano la maschera della camera cui appartiene.
-    Non e' ancora chiamata da nessuna pagina: e' solo disponibile.
+    Per ora la chiama solo polychora.js, subito dopo applySlideBackground().
+    Il clearControl piatto resta come fondo di sicurezza per i fotogrammi in cui
+    lo shader e' ancora in compilazione: il quadrilatero copre tutto, quindi
+    quando c'e' non si vede.
 
 SLIDE_THEME in libs/common.js: 'light' | 'dark'.
     Ogni pagina chiede themed(valoreChiaro, valoreScuro) e tiene tutti e due i
