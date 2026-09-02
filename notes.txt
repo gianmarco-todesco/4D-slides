@@ -98,6 +98,31 @@ Il mazzo e' passato a TEMA SCURO (era: animazioni scure su tema Reveal bianco).
     libro; capotondi2.jpg (195) contro capotondi1.jpg (90) era gia' una coppia
     disaccordata prima, con qualunque tema una delle due stona.
 
+createGradientBackground() in libs/common.js: sfondo sfumato condiviso.
+    Un quadrilatero (due triangoli) figlio della camera, dietro a tutto,
+    dimensionato sul campo visivo, colore che sfuma fra i quattro angoli.
+    Uso:  createGradientBackground(slide.camera)                 // colori dal tema
+          createGradientBackground(slide.camera, [as, ad, bs, bd])
+    L'ordine dei colori e' alto-sinistra, alto-destra, basso-sinistra,
+    basso-destra; ognuno un Color3 o un [r,g,b]. Ripetendone due si ottiene una
+    sfumatura verticale od orizzontale. Restituisce la mesh, che ha anche
+    setColours([...]) per cambiarli dopo.
+    Sta in common.js e non in gutil.js perche' gutil.js e' forkato e arriverebbe
+    a metà delle slide.
+    Tre cose da sapere se la si modifica:
+      - la sfumatura la fa il fragment shader, non i colori sui vertici: con due
+        triangoli l'interpolazione e' lineare un triangolo per volta, e se i
+        quattro colori non soddisfano c0+c2 == c1+c3 lungo la diagonale resta una
+        piega visibile. Con le uv nello shader la bilineare e' vera.
+      - isPickable = false, obbligatorio: diverse slide decidono cosa vuol dire
+        un trascinamento chiedendo pickInfo.pickedMesh, e un quadrilatero che
+        copre tutta la vista risponderebbe a ogni clic.
+      - scrittura di profondita' spenta e test acceso, cosi' non puo' coprire
+        niente in nessun ordine di disegno.
+    Su polychora-sections, che ha due camere con layerMask diverse, allo sfondo
+    va assegnata a mano la maschera della camera cui appartiene.
+    Non e' ancora chiamata da nessuna pagina: e' solo disponibile.
+
 SLIDE_THEME in libs/common.js: 'light' | 'dark'.
     Ogni pagina chiede themed(valoreChiaro, valoreScuro) e tiene tutti e due i
     valori nel sorgente, quindi rimettere 'dark' riporta il mazzo com'era.

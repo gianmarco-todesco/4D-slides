@@ -103,6 +103,149 @@ function applySlideBackground(scene) {
 }
 
 // ---------------------------------------------------------------------------
+// Sfondo sfumato.
+//
+// Un quadrilatero -- due triangoli -- figlio della camera e messo dietro a
+// tutto, dimensionato per coprire il campo visivo, con il colore che sfuma fra
+// i suoi quattro angoli. Sta qui e non in gutil.js perche' gutil.js e' forkato
+// (libs/ contro pages/sections2/) e la funzione arriverebbe a metà delle slide,
+// mentre questo file lo caricano tutte. E' la sorella ricca di
+// applySlideBackground() qui sopra.
+//
+// La sfumatura la fa il fragment shader, non i colori sui vertici. Due triangoli
+// interpolano linearmente un triangolo per volta, quindi se i quattro colori non
+// soddisfano c0 + c2 == c1 + c3 lungo la diagonale resta una piega visibile:
+// continua, ma non liscia. Leggendo i quattro angoli nello shader dalle uv si
+// ottiene la bilineare vera con gli stessi due triangoli.
+//
+// Tre dettagli facili da sbagliare:
+//   - isPickable = false. Diverse slide decidono cosa vuol dire un trascinamento
+//     chiedendo pickInfo.pickedMesh, e un quadrilatero che copre tutta la vista
+//     risponderebbe a ogni clic prendendosi il gesto.
+//   - scrittura di profondita' spenta, test di profondita' acceso. Cosi' il
+//     quadrilatero non puo' coprire niente in nessun ordine di disegno, e resta
+//     comunque dietro perche' e' piu' lontano del contenuto.
+//   - la dimensione si ricalcola quando cambiano rapporto d'aspetto, fov o
+//     fovMode. Il rapporto puo' cambiare senza un resize: polychora-sections
+//     alterna la sua camera fra il canvas intero e la meta'.
+// ---------------------------------------------------------------------------
+
+const NOME_SHADER_SFONDO = 'sfondoSfumato'
+
+// Registrati alla prima chiamata e non al caricamento del file, cosi' common.js
+// non pretende che BABYLON esista quando viene eseguito. Oggi babylon e' il primo
+// script in tutte le pagine, ma non c'e' niente che lo imponga.
+function registraShaderSfondo() {
+    if(BABYLON.Effect.ShadersStore[NOME_SHADER_SFONDO + 'VertexShader']) return
+
+    BABYLON.Effect.ShadersStore[NOME_SHADER_SFONDO + 'VertexShader'] = `
+    precision highp float;
+    attribute vec3 position;
+    attribute vec2 uv;
+    uniform mat4 worldViewProjection;
+    varying vec2 vUV;
+    void main(void) {
+        vUV = uv;
+        gl_Position = worldViewProjection * vec4(position, 1.0);
+    }
+`
+
+    BABYLON.Effect.ShadersStore[NOME_SHADER_SFONDO + 'FragmentShader'] = `
+    precision highp float;
+    varying vec2 vUV;
+    uniform vec3 coloreAS, coloreAD, coloreBS, coloreBD;
+    void main(void) {
+        vec3 alto  = mix(coloreAS, coloreAD, vUV.x);
+        vec3 basso = mix(coloreBS, coloreBD, vUV.x);
+        gl_FragColor = vec4(mix(basso, alto, vUV.y), 1.0);
+    }
+`
+}
+
+// colori: i quattro angoli, nell'ordine alto-sinistra, alto-destra,
+// basso-sinistra, basso-destra. Ognuno un BABYLON.Color3 o un [r,g,b].
+// Ripetendo lo stesso colore si ottiene una sfumatura verticale o orizzontale.
+// Senza colori usa una sfumatura discreta ricavata dal tema.
+// opzioni: { distance, name }
+function createGradientBackground(camera, colori, opzioni) {
+    registraShaderSfondo()
+    const scene = camera.getScene()
+    const opz = opzioni || {}
+    const nome = opz.name || 'sfondo-sfumato'
+
+    const c3 = v => Array.isArray(v) ? new BABYLON.Color3(v[0], v[1], v[2]) : v
+    if(!colori) {
+        // Il fondo del tema, schiarito in alto e scurito in basso: un cielo
+        // appena accennato, che non compete con quello che gli sta davanti.
+        const b = themed([1, 1, 1], [0.098, 0.098, 0.098])
+        const su = themed(0.0, 0.075), giu = themed(-0.055, -0.045)
+        const mescola = k => new BABYLON.Color3(
+            Math.min(1, Math.max(0, b[0] + k)),
+            Math.min(1, Math.max(0, b[1] + k)),
+            Math.min(1, Math.max(0, b[2] + k * 1.25)))
+        colori = [mescola(su), mescola(su), mescola(giu), mescola(giu)]
+    }
+    const angoli = colori.map(c3)
+
+    const mesh = new BABYLON.Mesh(nome, scene)
+    const vd = new BABYLON.VertexData()
+    vd.positions = [-0.5, 0.5, 0,   0.5, 0.5, 0,   -0.5, -0.5, 0,   0.5, -0.5, 0]
+    vd.uvs       = [0, 1,           1, 1,          0, 0,            1, 0]
+    vd.indices   = [0, 2, 1,   1, 2, 3]
+    vd.applyToMesh(mesh)
+
+    const mat = mesh.material = new BABYLON.ShaderMaterial(nome + '-mat', scene,
+        { vertex: NOME_SHADER_SFONDO, fragment: NOME_SHADER_SFONDO },
+        { attributes: ['position', 'uv'],
+          uniforms: ['worldViewProjection', 'coloreAS', 'coloreAD', 'coloreBS', 'coloreBD'] })
+    mat.backFaceCulling = false        // il senso di avvolgimento non conta
+    mat.disableDepthWrite = true
+
+    mesh.setColours = nuovi => {
+        const [as_, ad, bs, bd] = nuovi.map(c3)
+        mat.setColor3('coloreAS', as_); mat.setColor3('coloreAD', ad)
+        mat.setColor3('coloreBS', bs);  mat.setColor3('coloreBD', bd)
+    }
+    mesh.setColours(angoli)
+
+    mesh.parent = camera
+    mesh.isPickable = false
+
+    // Abbastanza lontano da stare dietro a tutto -- un ordine di grandezza oltre
+    // il contenuto di qualunque slide -- e comodamente dentro il frustum.
+    const distanza = opz.distance !== undefined
+        ? opz.distance
+        : Math.max(camera.minZ * 4, camera.maxZ * 0.5)
+    mesh.position.set(0, 0, distanza)
+
+    let memoria = ''
+    const adatta = () => {
+        const aspetto = scene.getEngine().getAspectRatio(camera)
+        const chiave = [aspetto, camera.fov, camera.fovMode, distanza].join('|')
+        if(chiave === memoria) return
+        memoria = chiave
+        // fov e' verticale per default ma non sempre, e leggerlo per l'asse
+        // sbagliato lascerebbe una striscia scoperta su un lato.
+        let larghezza, altezza
+        if(camera.fovMode === BABYLON.Camera.FOVMODE_HORIZONTAL_FIXED) {
+            larghezza = 2 * distanza * Math.tan(camera.fov * 0.5)
+            altezza = larghezza / aspetto
+        } else {
+            altezza = 2 * distanza * Math.tan(camera.fov * 0.5)
+            larghezza = altezza * aspetto
+        }
+        const margine = 1.02
+        mesh.scaling.set(larghezza * margine, altezza * margine, 1)
+    }
+    adatta()
+    const osservatore = scene.onBeforeRenderObservable.add(adatta)
+    mesh.onDisposeObservable.add(() => scene.onBeforeRenderObservable.remove(osservatore))
+
+    return mesh
+}
+
+
+// ---------------------------------------------------------------------------
 // Matching the drawing buffer to the pixels the canvas really occupies.
 //
 // Reveal scales the whole deck with `transform: scale()`, and the browser then
