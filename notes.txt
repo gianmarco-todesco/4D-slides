@@ -78,9 +78,16 @@ Il mazzo e' passato a TEMA SCURO (era: animazioni scure su tema Reveal bianco).
     rivede come una macchia piu' chiara sulla slide.
     Cambiare tema vuol dire toccare TRE posti, perche' SLIDE_THEME governa le
     animazioni ma non il contorno del mazzo:
-      1. SLIDE_THEME in libs/common.js
-      2. il <link> del tema in main.html e main_30min.html (black.css/white.css)
-      3. le variabili --etichetta e --evidenza in cima a slides/style.css
+      1. SLIDE_THEME in libs/common.js                       (una volta)
+      2. le variabili --etichetta e --evidenza in style.css   (una volta)
+      3. il <link> del tema, IN OGNI MAZZO                    (uno per file)
+    Il punto 3 e' quello che si dimentica: i mazzi si moltiplicano, uno per
+    conferenza, e un mazzo copiato prima del cambio di tema resta bianco da solo.
+    E' successo con main_sbdt_20260903.html, copiato da main_30min il 1 settembre,
+    cioe' dopo la correzione dell'antialiasing ma prima del tema scuro: aveva il
+    blocco pushScale ma il tema bianco e i <font color="magenta">.
+    Per un mazzo nuovo copiato da uno vecchio, le due cose da controllare sono
+    esattamente quelle: il <link> del tema e i <font> rimasti.
     Le tre parole in risalto delle citazioni erano <font color="magenta">: ora
     sono <span class="evidenza">, perche' il magenta pieno su nero e' saturo e
     sul proiettore fiorisce.
