@@ -68,6 +68,29 @@ Zero host esterni: il mazzo gira senza rete.
     formule su una slide sola, riscritte in HTML; main_30min lo caricava senza
     averne nemmeno una).
 
+Il mazzo e' passato a TEMA SCURO (era: animazioni scure su tema Reveal bianco).
+    Da correggere una cosa che avevo detto male: il mazzo non era scuro. Erano
+    scure le animazioni, dentro un tema Reveal bianco -- ed e' per quello che
+    esisteva il bordo arancione, per inquadrare il rettangolo scuro sul campo
+    chiaro. Ora combaciano e il bordo non serve piu' a niente.
+    Lo sfondo scuro delle animazioni e' #191919, cioe' esattamente quello del
+    tema black di Reveal: se i due non combaciano il riquadro dell'iframe si
+    rivede come una macchia piu' chiara sulla slide.
+    Cambiare tema vuol dire toccare TRE posti, perche' SLIDE_THEME governa le
+    animazioni ma non il contorno del mazzo:
+      1. SLIDE_THEME in libs/common.js
+      2. il <link> del tema in main.html e main_30min.html (black.css/white.css)
+      3. le variabili --etichetta e --evidenza in cima a slides/style.css
+    Le tre parole in risalto delle citazioni erano <font color="magenta">: ora
+    sono <span class="evidenza">, perche' il magenta pieno su nero e' saturo e
+    sul proiettore fiorisce.
+    Tre immagini restano rettangoli chiari su slide scura. Misurate sul bordo:
+    hinton-tesseract3.png (246, inchiostro mediano 248) e' l'unica che si rompe
+    davvero, e' un disegno al tratto su bianco e va invertita o messa su una
+    targa chiara di proposito; flatland1.jpg (245) passa, legge come pagina di
+    libro; capotondi2.jpg (195) contro capotondi1.jpg (90) era gia' una coppia
+    disaccordata prima, con qualunque tema una delle due stona.
+
 SLIDE_THEME in libs/common.js: 'light' | 'dark'.
     Ogni pagina chiede themed(valoreChiaro, valoreScuro) e tiene tutti e due i
     valori nel sorgente, quindi rimettere 'dark' riporta il mazzo com'era.

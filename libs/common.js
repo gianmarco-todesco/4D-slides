@@ -88,12 +88,15 @@ if(window.self !== window.top) {
 // bubbles is deliberately not themed. It draws its soap film with additive
 // blending, which needs something dark to add light to.
 // ---------------------------------------------------------------------------
-const SLIDE_THEME = 'light'          // 'light' | 'dark'
+const SLIDE_THEME = 'dark'           // 'light' | 'dark'
 
 function themed(light, dark) { return SLIDE_THEME === 'light' ? light : dark }
 
 function applySlideBackground(scene) {
-    const c = themed([1, 1, 1], [0.2, 0.2, 0.3])
+    // Il valore scuro e' il #191919 del tema black di Reveal: se i due non
+    // combaciano il riquadro dell'iframe si vede come una macchia piu' chiara
+    // sulla slide, che e' il difetto per cui esisteva il bordo arancione.
+    const c = themed([1, 1, 1], [0.098, 0.098, 0.098])
     // Color4.set takes four arguments. Called with three it leaves alpha
     // undefined, which has already bitten this project twice.
     scene.clearColor.set(c[0], c[1], c[2], 1)

@@ -1,3 +1,15 @@
+/* Colori del mazzo che non stanno nel tema di Reveal.
+   Vanno cambiati a mano insieme a due altre cose quando si cambia tema, perche'
+   SLIDE_THEME in libs/common.js governa le animazioni dentro gli iframe, non il
+   contorno del mazzo:
+     - il <link> del tema in main.html e main_30min.html (black.css / white.css)
+     - queste variabili qui sotto
+   Tema attuale: SCURO. */
+:root {
+    --etichetta: #4dd0e1;      /* chiaro: teal    -- ciano chiaro: 11:1 su nero */
+    --evidenza:  #ff7ad9;      /* chiaro: magenta -- rosa su nero non brucia    */
+}
+
 .reveal .quote {
     text-align: justify;
     padding:20px;
@@ -27,10 +39,11 @@
     position:absolute;
 }
 
-/* The orange rule that used to be here framed each iframe against the dark
-   background. On white it only adds a line that means nothing, so there is no
-   border by default now. .noborder below is kept: it is still on the Yendred
-   slide and does no harm. */
+/* Il bordo arancione che stava qui inquadrava il rettangolo scuro
+   dell'animazione sul campo chiaro della slide: era il tema Reveal a essere
+   bianco, non le animazioni. Ora che sfondo delle slide e sfondo delle
+   animazioni combaciano, il riquadro non si vede e il bordo non serve.
+   .noborder resta perche' e' ancora sulla slide di Yendred e non fa danni. */
 .reveal iframe {
     border: none;
 }
@@ -47,7 +60,7 @@
    only maths in the deck, and they cost a CDN host plus 1 MB of JavaScript that
    had to be reachable from the venue. Plain markup instead. */
 .reveal .formulas .label {
-    color: teal;
+    color: var(--etichetta);
     font-size: 60px;
     margin: 40px 0 0 0;
 }
@@ -60,4 +73,10 @@
 
 .reveal .formulas .math sup {
     font-size: 0.55em;
+}
+
+/* Le parole messe in risalto nelle citazioni. Erano <font color="magenta">:
+   il magenta pieno su nero e' saturo e sul proiettore fiorisce. */
+.reveal .evidenza {
+    color: var(--evidenza);
 }
