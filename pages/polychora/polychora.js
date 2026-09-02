@@ -31,8 +31,8 @@ function setup() {
     // sul tema chiaro la sfumatura e' appena accennata, per non mettersi a
     // competere con l'inchiostro scuro degli spigoli.
     slide.sfondo = createGradientBackground(slide.camera, themed(
-        [[1.00, 1.00, 1.00], [1.00, 1.00, 1.00], [0.90, 0.90, 0.94], [0.90, 0.90, 0.94]],
-        [[0.10, 0.10, 0.22], [0.13, 0.09, 0.20], [0.02, 0.02, 0.04], [0.02, 0.02, 0.04]]))
+        [[1.00, 1.00, 1.00], [1.00, 1.00, 1.00], [0.78, 0.78, 0.86], [0.78, 0.78, 0.86]],
+        [[0.20, 0.19, 0.42], [0.26, 0.16, 0.36], [0.03, 0.03, 0.06], [0.04, 0.03, 0.07]]))
     populateScene(scene)
     
     scene.registerBeforeRender(tick)

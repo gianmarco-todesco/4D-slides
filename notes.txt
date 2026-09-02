@@ -121,6 +121,16 @@ createGradientBackground() in libs/common.js: sfondo sfumato condiviso.
         niente in nessun ordine di disegno.
     Su polychora-sections, che ha due camere con layerMask diverse, allo sfondo
     va assegnata a mano la maschera della camera cui appartiene.
+    Sull'ampiezza della sfumatura, che ho sbagliato al primo colpo: non guardare
+    il RAPPORTO fra alto e basso, guarda l'INTERVALLO ASSOLUTO. La prima
+    tavolozza andava da luminanza 29 a 5, rapporto 5.8; quella buona va da 52 a
+    10, rapporto 5.4. Il rapporto e' praticamente lo stesso, ma la prima viveva
+    tutta sotto 30, cioe' nella zona che monitor luminosi e proiettori con neri
+    mediocri schiacciano, e sembrava tinta unita. In alto faceva (26,26,56)
+    contro un fondo (25,25,25): rosso e verde identici, solo il blu diverso.
+    Attenzione anche a come si giudica: i pixel grezzi letti dal framebuffer si
+    guardano a pieno contrasto su un'immagine isolata, e lusingano qualunque
+    sfumatura. Va guardata sullo schermo, in mezzo alle altre slide.
     Per ora la chiama solo polychora.js, subito dopo applySlideBackground().
     Il clearControl piatto resta come fondo di sicurezza per i fotogrammi in cui
     lo shader e' ancora in compilazione: il quadrilatero copre tutto, quindi

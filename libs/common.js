@@ -175,15 +175,16 @@ function createGradientBackground(camera, colori, opzioni) {
 
     const c3 = v => Array.isArray(v) ? new BABYLON.Color3(v[0], v[1], v[2]) : v
     if(!colori) {
-        // Il fondo del tema, schiarito in alto e scurito in basso: un cielo
-        // appena accennato, che non compete con quello che gli sta davanti.
-        const b = themed([1, 1, 1], [0.098, 0.098, 0.098])
-        const su = themed(0.0, 0.075), giu = themed(-0.055, -0.045)
-        const mescola = k => new BABYLON.Color3(
-            Math.min(1, Math.max(0, b[0] + k)),
-            Math.min(1, Math.max(0, b[1] + k)),
-            Math.min(1, Math.max(0, b[2] + k * 1.25)))
-        colori = [mescola(su), mescola(su), mescola(giu), mescola(giu)]
+        // Due tavolozze scritte a mano invece di una formula intorno al colore
+        // del tema. Il primo tentativo era una formula, e la sfumatura usciva
+        // cosi' timida da sembrare tinta unita: in alto faceva (26,26,56) contro
+        // un fondo (25,25,25), cioe' rosso e verde identici e solo il blu
+        // diverso. Su un monitor luminoso o su un proiettore con neri mediocri
+        // non si distingueva. L'ampiezza va tenuta larga: qui il rapporto di
+        // luminanza fra alto e basso e' circa 6 a 1.
+        colori = themed(
+            [[1.00, 1.00, 1.00], [1.00, 1.00, 1.00], [0.78, 0.78, 0.86], [0.78, 0.78, 0.86]],
+            [[0.20, 0.20, 0.31], [0.20, 0.20, 0.31], [0.03, 0.03, 0.05], [0.03, 0.03, 0.05]])
     }
     const angoli = colori.map(c3)
 
