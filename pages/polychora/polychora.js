@@ -30,9 +30,12 @@ function setup() {
     // compilazione. Sul tema scuro il viola in alto richiama quello dei vertici;
     // sul tema chiaro la sfumatura e' appena accennata, per non mettersi a
     // competere con l'inchiostro scuro degli spigoli.
-    slide.sfondo = createGradientBackground(slide.camera, themed(
-        [[1.00, 1.00, 1.00], [1.00, 1.00, 1.00], [0.78, 0.78, 0.86], [0.78, 0.78, 0.86]],
-        [[0.20, 0.19, 0.42], [0.26, 0.16, 0.36], [0.03, 0.03, 0.06], [0.04, 0.03, 0.07]]))
+    //slide.sfondo = createGradientBackground(slide.camera, themed(
+    //    [[1.00, 1.00, 1.00], [1.00, 1.00, 1.00], [0.78, 0.78, 0.86], [0.78, 0.78, 0.86]],
+    //    [[0.20, 0.19, 0.42], [0.26, 0.16, 0.36], [0.03, 0.03, 0.06], [0.04, 0.03, 0.07]]))
+    slide.sfondo = createGradientBackground(slide.camera, 
+        [[0,0,0],[0.4,0,0.4],[0,0,0.5],[0.5,0.5,0]])
+    // slide.sfondo.setColours([[0,0,0],[0.4,0,0.4],[0,0,1],[1,1,0]])
     populateScene(scene)
     
     scene.registerBeforeRender(tick)
@@ -59,7 +62,7 @@ function populateScene(scene) {
     // white it does the opposite: a flat 0.2 alpha laid over everything washes
     // the edges out until they break up, which reads as aliasing rather than as
     // the loss of contrast it actually is. So it belongs to the dark theme.
-    if(SLIDE_THEME === 'dark') {
+    if(false &&SLIDE_THEME === 'dark') {
         const th = -Math.asin(1/slide.focus)
         const r = Math.cos(th) * slide.scaleFactor / (slide.focus + Math.sin(th))
         const sphere = slide.sphere = BABYLON.MeshBuilder.CreateSphere('sphere', {
@@ -154,12 +157,27 @@ class PolychoronModel {
             this.edges.push(inst)
         }
 
-        let bigEdge = this.bigEdge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.04, height:1}, scene)
+        let bigEdge = this.bigEdge = BABYLON.MeshBuilder.CreateCylinder(name+'-edge', {diameter:0.04*2, height:1}, scene)
         bigEdge.parent = pivot
         mat = bigEdge.material = new BABYLON.StandardMaterial(name+'bigedge-mat', scene)
         mat.diffuseColor.set(0.8,0.1,0.1)
         bigEdge.isVisible = false
         this.bigEdges = []
+
+        // Facce della cella selezionata. Una mesh per faccia e non una sola per
+        // tutte: sono trasparenti, e Babylon ordina le mesh trasparenti dalla
+        // piu' lontana alla piu' vicina prima di disegnarle. Un'unica mesh
+        // uscirebbe in un solo lotto non ordinato e le sovrapposizioni
+        // sfarfallerebbero mentre ruoti. Una cella ha al massimo 12 facce -- il
+        // dodecaedro del 120-celle -- quindi il costo e' irrilevante su tutte e
+        // sei le forme, al contrario delle facce di tutto il policoro, che sul
+        // 600-celle sarebbero 1200.
+        mat = this.cellFaceMaterial = new BABYLON.StandardMaterial(name+'cellface-mat', scene)
+        mat.diffuseColor.set(0.85, 0.15, 0.12)     // il rosso degli spigoli spessi
+        mat.specularColor.set(0.15, 0.15, 0.15)
+        mat.alpha = 0.25
+        mat.backFaceCulling = false                // si guarda da entrambi i lati
+        this.cellFaces = []
 
         
 
@@ -198,6 +216,8 @@ class PolychoronModel {
             let pb = this.vertices[edge.b].position
             placeUnitCylinder(edge, pa,pb)
         })
+
+        this.updateCellFaces()
     }
 
     selectCell(cellIndex) {
@@ -221,7 +241,62 @@ class PolychoronModel {
                 let pa = vertices[a].position
                 let pb = vertices[b].position
                 placeUnitCylinder(inst, pa,pb)
-                bigEdges.push(inst)  
+                bigEdges.push(inst)
+            }
+        })
+        this.buildCellFaces(cellIndex)
+    }
+
+    buildCellFaces(cellIndex) {
+        this.disposeCellFaces()
+        const scene = this.pivot.getScene()
+        this.data.cells[cellIndex].forEach(faceIndex => {
+            const f = this.data.faces[faceIndex]
+            const mesh = new BABYLON.Mesh(this.pivot.name+'-cellface-'+faceIndex, scene)
+            mesh.parent = this.pivot
+            mesh.material = this.cellFaceMaterial
+            mesh.faceVerts = f
+            // project() e' una proiezione centrale, quindi manda piani in piani:
+            // la faccia resta planare e un ventaglio di triangoli e' esatto,
+            // qualunque poligono sia (triangoli, quadrati, pentagoni).
+            const indices = []
+            for(let k=2; k<f.length; k++) indices.push(0, k-1, k)
+            mesh.buf = {
+                positions: new Float32Array(f.length*3),
+                normals: new Float32Array(f.length*3),
+                indices,
+                built: false
+            }
+            this.cellFaces.push(mesh)
+        })
+        this.updateCellFaces()
+    }
+
+    disposeCellFaces() {
+        this.cellFaces.forEach(m => m.dispose())
+        this.cellFaces = []
+    }
+
+    updateCellFaces() {
+        this.cellFaces.forEach(mesh => {
+            const buf = mesh.buf
+            mesh.faceVerts.forEach((j,k) => {
+                const q = this.vertices[j].position
+                buf.positions[k*3]   = q.x
+                buf.positions[k*3+1] = q.y
+                buf.positions[k*3+2] = q.z
+            })
+            BABYLON.VertexData.ComputeNormals(buf.positions, buf.indices, buf.normals)
+            if(!buf.built) {
+                const vd = new BABYLON.VertexData()
+                vd.positions = buf.positions
+                vd.indices = buf.indices
+                vd.normals = buf.normals
+                vd.applyToMesh(mesh, true)      // updatable
+                buf.built = true
+            } else {
+                mesh.updateVerticesData(BABYLON.VertexBuffer.PositionKind, buf.positions)
+                mesh.updateVerticesData(BABYLON.VertexBuffer.NormalKind, buf.normals)
             }
         })
     }
@@ -231,6 +306,7 @@ class PolychoronModel {
         for(let i=0; i<vFlags.length; i++) vFlags[i]=0
         this.bigEdges.forEach(edge=>edge.dispose())
         const bigEdges = this.bigEdges = []
+        this.disposeCellFaces()
     }
 }
 

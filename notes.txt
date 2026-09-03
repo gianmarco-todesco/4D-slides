@@ -34,6 +34,18 @@ cartelle morte in pages/: sequence, sections, dali (senza html), tori, test
 
 
 DONE:
+policora: facce trasparenti della cella selezionata (tasto c). Una mesh per
+    faccia, non una sola per tutte: sono trasparenti e Babylon ordina le mesh
+    trasparenti dalla piu' lontana alla piu' vicina, mentre un'unica mesh
+    uscirebbe in un lotto non ordinato e le sovrapposizioni sfarfallerebbero
+    ruotando. Una cella ha al massimo 12 facce, quindi funziona su tutte e sei
+    le forme -- al contrario delle facce di TUTTO il policoro, che sul 600-celle
+    sarebbero 1200 mesh ricostruite a ogni fotogramma, e quel costo GPU da qui
+    non lo so misurare.
+    project() e' una proiezione centrale, quindi manda piani in piani: la faccia
+    resta planare e un ventaglio di triangoli e' esatto per qualunque poligono.
+    La cella e' sempre la 0. Sul tesseratto e' il cubo esterno, sul 120-celle e'
+    una piccola cella interna: se serve scorrerle vuole un tasto in piu'.
 sezioni 4d: colori diversi per le facce
 sfera: aggiungere il punto luminoso in cima alla sfera
 gax: orientare secondo le facce (e aggiunti i colori)
