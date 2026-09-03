@@ -21,6 +21,9 @@ function setup() {
     const light2 = new BABYLON.PointLight("light2", new BABYLON.Vector3(0, 0, 0), scene)
     light2.parent = camera
 
+    slide.sfondo = createGradientBackground(slide.camera, 
+        [[0,0,0],[0.4,0,0.4],[0,0,0.5],[0.5,0.5,0]])
+    
     populateScene()
     
     scene.registerBeforeRender(tick)
@@ -252,6 +255,7 @@ class PolychoronSectionModel extends GeometricModel {
             const q = T(this.matrix, this.data.getCellCenter(i))
             const n = Math.hypot(q.x, q.y, q.z) || 1
             const x = q.x/n, y = q.y/n, z = q.z/n
+            /*
             return themed(
                 // A harmonious band rather than the full circle: cyan through
                 // violet reads on white without turning into sweets.
@@ -259,6 +263,9 @@ class PolychoronSectionModel extends GeometricModel {
                          0.30 + 0.30 * Math.abs(z), 0.93),
                 // What the dark theme had: hue straight from w, full rainbow.
                 HSVtoRGB((2/3) * (q.w - (-0.125)) / 0.25, 0.75, 0.8))
+                */
+            return HSVtoRGB(0.45 + 0.25 * ((Math.atan2(y, x)/(2*Math.PI) + 1) % 1),
+                         0.30 + 0.30 * Math.abs(z), 0.93)
         })
     }
 

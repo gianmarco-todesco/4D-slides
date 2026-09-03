@@ -156,8 +156,8 @@ function onKeyEvent(kbInfo) {
         case BABYLON.KeyboardEventTypes.KEYDOWN:
             // console.log("KEY DOWN: ", kbInfo.event.key);
             const key = kbInfo.event.keyCode
-            if(kbInfo.event.key == "s") slide.stepManager.next();
-            else if(kbInfo.event.key == "a") slide.stepManager.prev();
+            if(kbInfo.event.key == "x") slide.stepManager.next();
+            else if(kbInfo.event.key == "z") slide.stepManager.prev();
     }
 }
  
